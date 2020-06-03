@@ -3,6 +3,7 @@
 /data/*
 /outputs/*
 .idea/*
+/data1000/*
 
 # Jupyter Notebook
 .ipynb_checkpoints
