@@ -1,6 +1,8 @@
 import os, random
 import string
 import shutil
+import pandas as pd
+from PIL import Image
 from keras import layers
 from keras import models
 from keras import optimizers
@@ -8,6 +10,26 @@ from keras.preprocessing import image
 from keras.preprocessing.image import ImageDataGenerator
 import matplotlib.pyplot as plt
 
+# #-----------------------------------------------------------------------------------------------------------------------
+# # LOAD THE DATA
+# #-----------------------------------------------------------------------------------------------------------------------
+
+# creating the data folder
+os.mkdir('data')
+os.mkdir(r'data/before')
+
+# this code will download the data (it has 2GB). If the data is already downloaded this step can be skipped
+data_url = 'www.cvssp.org/FingerSpellingKinect2011/fingerspelling5.tar.bz2'
+import requests
+req = requests.get(data_url)
+zname = "fingerspelling5.tar.bz2"
+zfile = open(zname, 'wb')
+zfile.write(req.content)
+zfile.close()
+
+shutil.unpack_archive("fingerspelling5.tar.bz2")
+
+req.content
 # #-----------------------------------------------------------------------------------------------------------------------
 # # PREPROCESS DATA
 # #-----------------------------------------------------------------------------------------------------------------------
@@ -101,6 +123,57 @@ import matplotlib.pyplot as plt
 #         src = os.path.join(folder_letter_source, image)
 #         dst = os.path.join(folder_letter_destiny_test, image)
 #         shutil.move(src, dst)
+
+#-----------------------------------------------------------------------------------------------------------------------
+# SIZE OF THE IMAGES
+#-----------------------------------------------------------------------------------------------------------------------
+
+img_dict = {'filename':[], 'width':[], 'height':[]}
+for index, letter in enumerate(os.listdir(train_dir)):
+    folder_letter = os.path.join(train_dir, letter)
+    file_list = [x for x in os.listdir(folder_letter)]
+    for img_filename in file_list:
+        # opening the image file and getting size info
+        img_path = os.path.join(train_dir, letter, img_filename)
+        img = Image.open(img_path)
+        width, height = img.size
+        # adding size parameters and filenames to the dictionary
+        img_dict['filename'].append(img_filename)
+        img_dict['width'].append(width)
+        img_dict['height'].append(height)
+
+# creating a dataframe with the image sizes
+img_df = pd.DataFrame(data=img_dict)
+img_df['area'] = img_df['height'] * img_df['width']
+img_df['aspect_ratio'] = img_df['width'] / img_df['height']
+
+# plotting the height distribution
+ax = img_df['height'].hist(bins=100)
+ax.set_title('Distribution of Images\' Heights')
+ax.set_xlabel('Height of image (in pixels)')
+ax.set_ylabel('Number of images')
+plt.show()
+
+# plotting the width distribution
+ax = img_df['width'].hist(bins=100)
+ax.set_title('Distribution of Images\' Widths')
+ax.set_xlabel('Width of image (in pixels)')
+ax.set_ylabel('Number of images')
+plt.show()
+
+# plotting the width distribution
+ax = img_df['area'].hist(bins=100)
+ax.set_title('Distribution of Images\' Areas')
+ax.set_xlabel('Area of image (in pixels)')
+ax.set_ylabel('Number of images')
+plt.show()
+
+# plotting the aspect ration distribution
+ax = img_df['aspect_ratio'].hist(bins=100)
+ax.set_title('Distribution of Images\' Aspect Ratios')
+ax.set_xlabel('Aspect ratio of image')
+ax.set_ylabel('Number of images')
+plt.show()
 
 #-----------------------------------------------------------------------------------------------------------------------
 # DATA PRE-PROCESSING
