@@ -11,8 +11,8 @@ import matplotlib.pyplot as plt
 #-----------------------------------------------------------------------------------------------------------------------
 # PREPROCESS DATA
 #-----------------------------------------------------------------------------------------------------------------------
-basedir = r'C:\Users\TITA\Downloads\PREPROCESS DATASET'
-destinydir = r'C:\Users\TITA\Downloads\IMAGENS_ALL'
+basedir = r'.data\PREPROCESS DATASET'
+destinydir = r'.data\IMAGENS_ALL'
 
 # Alphabet
 alphabet_upper = list(string.ascii_uppercase)
