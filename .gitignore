@@ -1,0 +1,8 @@
+# Custom
+
+/data/*
+/outputs/*
+.idea/*
+
+# Jupyter Notebook
+.ipynb_checkpoints
