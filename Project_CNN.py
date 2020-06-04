@@ -15,130 +15,134 @@ from keras.preprocessing import image
 from keras.preprocessing.image import ImageDataGenerator
 import matplotlib.pyplot as plt
 import kaggle
+from tqdm import tqdm
 
 # #-----------------------------------------------------------------------------------------------------------------------
 # # LOADING THE DATA
 # #-----------------------------------------------------------------------------------------------------------------------
 
+def createdir(mydir):
+    try:
+        os.mkdir(mydir)
+    except OSError:
+        pass
+
+
 # creating the data folder and the folder that will contain the original dataset
 # (if these folders already exist, the process of creating them will be skipped
-try: os.makedirs('data')
-except OSError: pass
-
-try:
-    os.makedirs(r'data/before')
-except OSError:
-    pass
+createdir(r'data')
 
 # this code will download the data (it has 2GB). If the data is already downloaded this step can be skipped
 kaggle.api.authenticate()
-kaggle.api.dataset_download_files('mrgeislinger/asl-rgb-depth-fingerspelling-spelling-it-out', path=r'data/before', unzip=True)
+kaggle.api.dataset_download_files('mrgeislinger/asl-rgb-depth-fingerspelling-spelling-it-out', path=r'data', unzip=True)
 
+os.rename(r".\data\dataset5" , r".\data\original" )
 
 # #-----------------------------------------------------------------------------------------------------------------------
 # # PREPROCESS DATA
 # #-----------------------------------------------------------------------------------------------------------------------
-#basedir = r'.\data\PREPROCESS DATASET'
-#destinydir = r'.\data'
+#basedir = r'C:\Users\TITA\Downloads\data'
+basedir= r'.\data'
+
+data1000 = (basedir + r"\data1000")
+createdir(data1000)
+
+originaldir = r'.\data\original'
+destinationdir = data1000
 
 # Alphabet
-#alphabet_upper = list(string.ascii_uppercase)
-#alphabet_lower = list(string.ascii_lowercase)
 
-# counts = {}
-# for letter in alphabet_lower:
-#         counts["count_{0}".format(letter)] = 0
-#
-# # Rename all images with letter and id
-# for idx, folder in enumerate(os.listdir(basedir)):
-#     folder_base = os.path.join(basedir, folder)
-#
-#     for index, letter in enumerate(os.listdir(folder_base)):
-#         folder_letter = os.path.join(folder_base, letter)
-#
-#         for count, image in enumerate(os.listdir(folder_letter)):
-#             dst = str(letter) + str(counts["count_{0}".format(str(letter))]) + ".png"
-#
-#             if "depth" in str(image):
-#                 os.remove(os.path.join(folder_letter, image))
-#             else:
-#                 src = os.path.join(folder_letter, image)
-#                 dst = os.path.join(folder_letter, dst)
-#
-#                 os.rename(src, dst)
-#
-#                 counts["count_{0}".format(str(letter))] += 1
-#
-# #-----------------------------------------------------------------------------------------------------------------------
-# # ORGANIZE DATA INTO TRAIN, VALIDATION AND TEST DIRECTORIES
-# #-----------------------------------------------------------------------------------------------------------------------
-#
-# # create directories for the train, val and test splits
-# train_dir = os.path.join(destinydir, 'train')
-# os.mkdir(train_dir)
-# val_dir = os.path.join(destinydir, 'validation')
-# os.mkdir(val_dir)
-# test_dir = os.path.join(destinydir, 'test')
-# os.mkdir(test_dir)
-#
-# # create directories with classes
-# alphabet_lower.remove('j')
-# alphabet_lower.remove('z')
-# for dir in [train_dir, val_dir, test_dir]:
-#     for letter in alphabet_lower:
-#         os.mkdir(os.path.join(dir, letter))
-#
-# # 350 images to each class in training
-# # 70 images from each person's folder
-# images_per_person = 400
-#
-# for idx, folder in enumerate(os.listdir(basedir)):
-#     folder_base = os.path.join(basedir, folder)
-#
-#     for index, letter in enumerate(os.listdir(folder_base)):
-#         folder_letter_source = os.path.join(folder_base, letter)
-#         folder_letter_destiny = os.path.join(train_dir, letter)                             # updated to train_dir
-#
-#         images_kept = random.sample(os.listdir(folder_letter_source), k=images_per_person)
-#
-#         for image in images_kept:
-#             src = os.path.join(folder_letter_source, image)
-#             dst = os.path.join(folder_letter_destiny, image)
-#             shutil.copyfile(src, dst)
-#
-# # move 50 images from train to validation
-# # move 50 images from train to test
-# images_for_test = 500
-#
-# for index, letter in enumerate(os.listdir(train_dir)):
-#     folder_letter_source = os.path.join(train_dir, letter)
-#     folder_letter_destiny_val = os.path.join(val_dir, letter)
-#     folder_letter_destiny_test = os.path.join(test_dir, letter)
-#
-#     images_val = random.sample(os.listdir(folder_letter_source), k=images_for_test)
-#     for image in images_val:
-#         src = os.path.join(folder_letter_source, image)
-#         dst = os.path.join(folder_letter_destiny_val, image)
-#         shutil.move(src, dst)
-#
-#     images_test = random.sample(os.listdir(folder_letter_source), k=images_for_test)
-#     for image in images_test:
-#         src = os.path.join(folder_letter_source, image)
-#         dst = os.path.join(folder_letter_destiny_test, image)
-#         shutil.move(src, dst)
+alphabet_lower = list(string.ascii_lowercase)
+
+alphabet_lower.remove('j')
+alphabet_lower.remove('z')
+
+counts = {}
+for letter in alphabet_lower:
+        counts["count_{0}".format(letter)] = 0
+
+# Rename all images with letter and id
+for idx, folder in tqdm(enumerate(os.listdir(originaldir))):
+    folder_base = os.path.join(originaldir, folder)
+
+    for index, letter in enumerate(os.listdir(folder_base)):
+        folder_letter = os.path.join(folder_base, letter)
+
+        for count, image in enumerate(os.listdir(folder_letter)):
+            dst = str(letter) + str(counts["count_{0}".format(str(letter))]) + ".png"
+
+            if "depth" in str(image):
+                os.remove(os.path.join(folder_letter, image))
+            else:
+                src = os.path.join(folder_letter, image)
+                dst = os.path.join(folder_letter, dst)
+
+                os.rename(src, dst)
+
+                counts["count_{0}".format(str(letter))] += 1
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# ORGANIZE DATA INTO TRAIN, VALIDATION AND TEST DIRECTORIES
+#-----------------------------------------------------------------------------------------------------------------------
+
+# create directories for the train, val and test splits
+train_dir = os.path.join(destinationdir, 'train')
+val_dir = os.path.join(destinationdir, 'validation')
+test_dir = os.path.join(destinationdir, 'test')
+
+createdir(train_dir)
+createdir(val_dir)
+createdir(test_dir)
+
+# create directories with classes
+for dir in [train_dir, val_dir, test_dir]:
+    for letter in alphabet_lower:
+        createdir(os.path.join(dir, letter))
+
+# Select the number of images to each class in training
+# Select images from each person's folder
+images_per_person = 280
+
+for idx, folder in tqdm(enumerate(os.listdir(originaldir))):
+    folder_base = os.path.join(originaldir, folder)
+
+    for index, letter in enumerate(os.listdir(folder_base)):
+        folder_letter_source = os.path.join(folder_base, letter)
+        folder_letter_destiny = os.path.join(train_dir, letter)                             # updated to train_dir
+
+        images_kept = random.sample(os.listdir(folder_letter_source), k=images_per_person)
+
+        for image in images_kept:
+            src = os.path.join(folder_letter_source, image)
+            dst = os.path.join(folder_letter_destiny, image)
+            shutil.copyfile(src, dst)
+
+# Select images for validation/test
+
+images_for_test_val = 200
+
+for index, letter in enumerate(os.listdir(train_dir)):
+    folder_letter_source = os.path.join(train_dir, letter)
+    folder_letter_destiny_val = os.path.join(val_dir, letter)
+    folder_letter_destiny_test = os.path.join(test_dir, letter)
+
+    images_val = random.sample(os.listdir(folder_letter_source), k=images_for_test_val)
+    for image in images_val:
+        src = os.path.join(folder_letter_source, image)
+        dst = os.path.join(folder_letter_destiny_val, image)
+        shutil.move(src, dst)
+
+    images_test = random.sample(os.listdir(folder_letter_source), k=images_for_test_val)
+    for image in images_test:
+        src = os.path.join(folder_letter_source, image)
+        dst = os.path.join(folder_letter_destiny_test, image)
+        shutil.move(src, dst)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
 # SIZE OF THE IMAGES
 #-----------------------------------------------------------------------------------------------------------------------
-
-basedir = r'C:\Users\TITA\Downloads\data'
-basedir= r'.\data'
-
-data1000 = (basedir + r"/data1000")
-train_dir = (data1000 + r"/train")
-val_dir = (data1000 + r"/validation")
-test_dir = (data1000 + r"/test" )
 
 
 img_dict = {'filename':[], 'width':[], 'height':[]}
@@ -196,13 +200,6 @@ plt.show()
 # descriptive statistics for size
 size_desc = img_df.describe()
 
-img_df["width_height"] = img_df[["width" , "height"]].apply(lambda row: "_".join(row.values.astype(str)) , axis=1)
-img_df["counts_w_l"] = img_df.groupby(["width_height"]).transform("count")
-x= img_df["width"]
-y= img_df["height"]
-z= img_df["counts_w_l"]
-plt.scatter(x, y, s=z*1000, alpha=0.5)
-plt.show()
 
 # joint distribution of height, width
 img_df["width_height"] = img_df[["width" , "height"]].apply(lambda row: "_".join(row.values.astype(str)) , axis=1)
@@ -219,20 +216,21 @@ plt.show()
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-train_red_dir = (data1000 + r'/train_red')
-os.mkdir(train_red_dir)
-val_red_dir = (data1000 + r'/val_red')
-os.mkdir(val_red_dir)
-test_red_dir = (data1000 + r'/test_red')
-os.mkdir(test_red_dir)
+train_red_dir = (basedir + r'\red\train_red')
+val_red_dir = (basedir + r'\red\val_red')
+test_red_dir = (basedir + r'\red\test_red')
+
+# TODO: Verificar se posso criar directamente as subdirectorias sem criar a red primeiro
+createdir(basedir + r"\red")
+createdir(train_red_dir)
+createdir(val_red_dir)
+createdir(test_red_dir)
 
 
-alphabet_lower.remove('j')
-alphabet_lower.remove('z')
 for letter in alphabet_lower:
-    os.mkdir(os.path.join(train_red_dir, letter))
-    os.mkdir(os.path.join(val_red_dir, letter))
-    os.mkdir(os.path.join(test_red_dir, letter))
+    createdir(os.path.join(train_red_dir, letter))
+    createdir(os.path.join(val_red_dir, letter))
+    createdir(os.path.join(test_red_dir, letter))
 
 
 for index, letter in enumerate(os.listdir(train_dir)):
@@ -244,7 +242,7 @@ for index, letter in enumerate(os.listdir(train_dir)):
         r,g,b = image.split()
         r.save(os.path.join(train_red_dir, letter, img_filename))
 
-for index, letter in enumerate(os.listdir(val_dir)):
+for index, letter in tqdm(enumerate(os.listdir(val_dir))):
     folder_letter = os.path.join(val_dir, letter)
     file_list = [x for x in os.listdir(folder_letter)]
     for img_filename in file_list:
@@ -253,7 +251,7 @@ for index, letter in enumerate(os.listdir(val_dir)):
         r,g,b = image.split()
         r.save(os.path.join(val_red_dir, letter, img_filename))
 
-for index, letter in enumerate(os.listdir(test_dir)):
+for index, letter in tqdm(enumerate(os.listdir(test_dir))):
     folder_letter = os.path.join(test_dir, letter)
     file_list = [x for x in os.listdir(folder_letter)]
     for img_filename in file_list:
@@ -297,7 +295,7 @@ test_generator = test_datagen.flow_from_directory(
 model = models.Sequential()
 
 # feature maps extracted: 32   # filter: (3x3)  slider: 1
-model.add(layers.Conv2D(100, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
+model.add(layers.Conv2D(100, (3, 3), activation='relu', input_shape=(150, 150, 3), padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
 model.add(layers.Conv2D(200, (3, 3), activation='relu', padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
