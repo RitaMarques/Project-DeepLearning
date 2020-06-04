@@ -129,14 +129,14 @@ kaggle.api.dataset_download_files('mrgeislinger/asl-rgb-depth-fingerspelling-spe
 #-----------------------------------------------------------------------------------------------------------------------
 # SIZE OF THE IMAGES
 #-----------------------------------------------------------------------------------------------------------------------
-baserita = r'C:\Users\TITA\Downloads\data\data1000'
-train_dir = os.path.join(baserita, 'train')
-val_dir = os.path.join(baserita, 'validation')
-test_dir = os.path.join(baserita, 'test')
 
-train_dir = r'.\data1000\train'
-val_dir = r'.\data1000\validation'
-test_dir = r'.\data1000\test'
+basedir = r'C:\Users\TITA\Downloads\data'
+basedir= r'.\data'
+
+data1000 = (basedir + r"/data1000")
+train_dir = (data1000 + r"/train")
+val_dir = (data1000 + r"/validation")
+test_dir = (data1000 + r"/test" )
 
 
 img_dict = {'filename':[], 'width':[], 'height':[]}
@@ -211,18 +211,19 @@ z= img_df["counts_w_l"]
 plt.scatter(x, y, s=z*10, alpha=0.5, )
 # TODO: plot in seaborn with hue by letter
 plt.show()
-img_df
+
 #-----------------------------------------------------------------------------------------------------------------------
 # DATA PRE-PROCESSING
 #-----------------------------------------------------------------------------------------------------------------------
 
-os.mkdir(os.path.join(train_dir, 'train_red'))
-train_red_dir = os.path.join(train_dir, 'train_red')
 
-os.mkdir(r'C:\Users\TITA\Downloads\data1000\val_red')
-val_red_dir = r'C:\Users\TITA\Downloads\data1000\val_red'
-os.mkdir(r'C:\Users\TITA\Downloads\data1000\test_red')
-test_red_dir = r'C:\Users\TITA\Downloads\data1000\test_red'
+train_red_dir = (data1000 + r'/train_red')
+os.mkdir(train_red_dir)
+val_red_dir = (data1000 + r'/val_red')
+os.mkdir(val_red_dir)
+test_red_dir = (data1000 + r'/test_red')
+os.mkdir(test_red_dir)
+
 
 alphabet_lower.remove('j')
 alphabet_lower.remove('z')
@@ -266,21 +267,21 @@ val_datagen = ImageDataGenerator(rescale=1.0/255.0)
 test_datagen = ImageDataGenerator(rescale=1.0/255.0)
 
 train_generator = train_datagen.flow_from_directory(
-    train_dir,
+    train_red_dir,
     target_size=(150, 150),  # resizes all images
     batch_size=50,
     class_mode='categorical'
 )
 
 validation_generator = val_datagen.flow_from_directory(
-    val_dir,
+    val_red_dir,
     target_size=(150, 150),  # resizes all images
     batch_size=50,
     class_mode='categorical'
 )
 
 test_generator = test_datagen.flow_from_directory(
-    test_dir,
+    test_red_dir,
     target_size=(150, 150),  # resizes all images
     batch_size=50,
     class_mode='categorical'
