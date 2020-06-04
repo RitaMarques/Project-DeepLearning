@@ -14,8 +14,12 @@ import matplotlib.pyplot as plt
 # #-----------------------------------------------------------------------------------------------------------------------
 # # LOAD THE DATA
 # #-----------------------------------------------------------------------------------------------------------------------
-
+# TODO: get data directly from online
 # creating the data folder
+try:
+    os.makedirs('./path/to/somewhere')
+except OSError:
+    pass
 os.mkdir('data')
 os.mkdir(r'data/before')
 
@@ -30,16 +34,16 @@ zfile.close()
 
 shutil.unpack_archive("fingerspelling5.tar.bz2")
 
-req.content
+#req.content
 # #-----------------------------------------------------------------------------------------------------------------------
 # # PREPROCESS DATA
 # #-----------------------------------------------------------------------------------------------------------------------
-basedir = r'C:\Users\TITA\Downloads\PREPROCESS DATASET'
-destinydir = r'C:\Users\TITA\Downloads\data'
+#basedir = r'.\data\PREPROCESS DATASET'
+#destinydir = r'.\data'
 
 # Alphabet
-alphabet_upper = list(string.ascii_uppercase)
-alphabet_lower = list(string.ascii_lowercase)
+#alphabet_upper = list(string.ascii_uppercase)
+#alphabet_lower = list(string.ascii_lowercase)
 
 # counts = {}
 # for letter in alphabet_lower:
@@ -127,6 +131,10 @@ alphabet_lower = list(string.ascii_lowercase)
 #-----------------------------------------------------------------------------------------------------------------------
 # SIZE OF THE IMAGES
 #-----------------------------------------------------------------------------------------------------------------------
+train_dir = r'.\data1000\train'
+val_dir = r'.\data1000\validation'
+test_dir = r'.\data1000\test'
+
 
 img_dict = {'filename':[], 'width':[], 'height':[]}
 for index, letter in enumerate(os.listdir(train_dir)):
@@ -179,13 +187,28 @@ plt.show()
 img_df['handshape'] = img_df['filename'].apply(lambda x: x[0])
 img_df['aspect_ratio'].hist(by=img_df['handshape'])
 
+img_df["width_height"] = img_df[["width" , "height"]].apply(lambda row: "_".join(row.values.astype(str)) , axis=1)
+img_df["counts_w_l"] = img_df.groupby(["width_height"]).transform("count")
+x= img_df["width"]
+y= img_df["height"]
+z= img_df["counts_w_l"]
+plt.scatter(x, y, s=z*1000, alpha=0.5)
+plt.show()
 
+# joint distribution of height, width
+img_df["width_height"] = img_df[["width" , "height"]].apply(lambda row: "_".join(row.values.astype(str)) , axis=1)
+img_df["counts_w_l"] = img_df["width_height"].map(img_df["width_height"].value_counts())
+x= img_df["width"]
+y= img_df["height"]
+z= img_df["counts_w_l"]
+plt.scatter(x, y, s=z*10, alpha=0.5, )
+# TODO: plot in seaborn with hue by letter
+plt.show()
+img_df
 #-----------------------------------------------------------------------------------------------------------------------
 # DATA PRE-PROCESSING
 #-----------------------------------------------------------------------------------------------------------------------
-train_dir = r'.\data1000\train'
-val_dir = r'.\data1000\validation'
-test_dir = r'.\data1000\test'
+
 
 # creates tensors out of the data
 train_datagen = ImageDataGenerator()
@@ -217,6 +240,7 @@ test_generator = test_datagen.flow_from_directory(
 #-----------------------------------------------------------------------------------------------------------------------
 # NETWORK
 #-----------------------------------------------------------------------------------------------------------------------
+
 model = models.Sequential()
 
 # feature maps extracted: 32   # filter: (3x3)  slider: 1                             (width, height, feature maps)
