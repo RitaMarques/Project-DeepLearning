@@ -1,4 +1,8 @@
 
+# #-----------------------------------------------------------------------------------------------------------------------
+# # IMPORTING NEEDED PACKAGES
+# #-----------------------------------------------------------------------------------------------------------------------
+
 import os, random
 import string
 import shutil
@@ -13,20 +17,18 @@ import matplotlib.pyplot as plt
 import kaggle
 
 # #-----------------------------------------------------------------------------------------------------------------------
-# # LOAD THE DATA
+# # LOADING THE DATA
 # #-----------------------------------------------------------------------------------------------------------------------
 
 # creating the data folder and the folder that will contain the original dataset
-try:
-    os.makedirs('data')
-except OSError:
-    pass
+# (if these folders already exist, the process of creating them will be skipped
+try: os.makedirs('data')
+except OSError: pass
 
 try:
     os.makedirs(r'data/before')
 except OSError:
     pass
-
 
 # this code will download the data (it has 2GB). If the data is already downloaded this step can be skipped
 kaggle.api.authenticate()
