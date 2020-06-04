@@ -1,4 +1,8 @@
 
+#-----------------------------------------------------------------------------------------------------------------------
+# IMPORTING NEEDED PACKAGES
+#-----------------------------------------------------------------------------------------------------------------------
+
 import os, random
 import string
 import shutil
@@ -14,7 +18,7 @@ import kaggle
 from tqdm import tqdm
 
 #-----------------------------------------------------------------------------------------------------------------------
-# LOAD THE DATA
+# LOADING THE DATA
 #-----------------------------------------------------------------------------------------------------------------------
 
 def createdir(mydir):
@@ -24,6 +28,7 @@ def createdir(mydir):
         pass
 
 # creating the data folder that will contain all the datasets
+# (if these folders already exist, the process of creating them will be skipped
 createdir(r'data')
 
 # this code will download the data (it has 2GB). If the data is already downloaded this step can be skipped
