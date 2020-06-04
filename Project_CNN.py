@@ -38,104 +38,110 @@ shutil.unpack_archive("fingerspelling5.tar.bz2")
 # #-----------------------------------------------------------------------------------------------------------------------
 # # PREPROCESS DATA
 # #-----------------------------------------------------------------------------------------------------------------------
-#basedir = r'.\data\PREPROCESS DATASET'
-#destinydir = r'.\data'
+#basedir = r'C:\Users\TITA\Downloads\data'
+basedir= r'.\data'
+
+data1000 = (basedir + r"/data1000")
+os.makedir()
+#preprocessdir = r'.\data\PREPROCESS DATASET'
+destinationdir = r'.\data\data1000'
 
 # Alphabet
-#alphabet_upper = list(string.ascii_uppercase)
-#alphabet_lower = list(string.ascii_lowercase)
+alphabet_upper = list(string.ascii_uppercase)
+alphabet_lower = list(string.ascii_lowercase)
 
-# counts = {}
-# for letter in alphabet_lower:
-#         counts["count_{0}".format(letter)] = 0
-#
-# # Rename all images with letter and id
-# for idx, folder in enumerate(os.listdir(basedir)):
-#     folder_base = os.path.join(basedir, folder)
-#
-#     for index, letter in enumerate(os.listdir(folder_base)):
-#         folder_letter = os.path.join(folder_base, letter)
-#
-#         for count, image in enumerate(os.listdir(folder_letter)):
-#             dst = str(letter) + str(counts["count_{0}".format(str(letter))]) + ".png"
-#
-#             if "depth" in str(image):
-#                 os.remove(os.path.join(folder_letter, image))
-#             else:
-#                 src = os.path.join(folder_letter, image)
-#                 dst = os.path.join(folder_letter, dst)
-#
-#                 os.rename(src, dst)
-#
-#                 counts["count_{0}".format(str(letter))] += 1
-#
-# #-----------------------------------------------------------------------------------------------------------------------
-# # ORGANIZE DATA INTO TRAIN, VALIDATION AND TEST DIRECTORIES
-# #-----------------------------------------------------------------------------------------------------------------------
-#
-# # create directories for the train, val and test splits
-# train_dir = os.path.join(destinydir, 'train')
-# os.mkdir(train_dir)
-# val_dir = os.path.join(destinydir, 'validation')
-# os.mkdir(val_dir)
-# test_dir = os.path.join(destinydir, 'test')
-# os.mkdir(test_dir)
-#
-# # create directories with classes
-# alphabet_lower.remove('j')
-# alphabet_lower.remove('z')
-# for dir in [train_dir, val_dir, test_dir]:
-#     for letter in alphabet_lower:
-#         os.mkdir(os.path.join(dir, letter))
-#
-# # 350 images to each class in training
-# # 70 images from each person's folder
-# images_per_person = 400
-#
-# for idx, folder in enumerate(os.listdir(basedir)):
-#     folder_base = os.path.join(basedir, folder)
-#
-#     for index, letter in enumerate(os.listdir(folder_base)):
-#         folder_letter_source = os.path.join(folder_base, letter)
-#         folder_letter_destiny = os.path.join(train_dir, letter)                             # updated to train_dir
-#
-#         images_kept = random.sample(os.listdir(folder_letter_source), k=images_per_person)
-#
-#         for image in images_kept:
-#             src = os.path.join(folder_letter_source, image)
-#             dst = os.path.join(folder_letter_destiny, image)
-#             shutil.copyfile(src, dst)
-#
-# # move 50 images from train to validation
-# # move 50 images from train to test
-# images_for_test = 500
-#
-# for index, letter in enumerate(os.listdir(train_dir)):
-#     folder_letter_source = os.path.join(train_dir, letter)
-#     folder_letter_destiny_val = os.path.join(val_dir, letter)
-#     folder_letter_destiny_test = os.path.join(test_dir, letter)
-#
-#     images_val = random.sample(os.listdir(folder_letter_source), k=images_for_test)
-#     for image in images_val:
-#         src = os.path.join(folder_letter_source, image)
-#         dst = os.path.join(folder_letter_destiny_val, image)
-#         shutil.move(src, dst)
-#
-#     images_test = random.sample(os.listdir(folder_letter_source), k=images_for_test)
-#     for image in images_test:
-#         src = os.path.join(folder_letter_source, image)
-#         dst = os.path.join(folder_letter_destiny_test, image)
-#         shutil.move(src, dst)
+ alphabet_lower.remove('j')
+ alphabet_lower.remove('z')
+
+counts = {}
+for letter in alphabet_lower:
+        counts["count_{0}".format(letter)] = 0
+
+# Rename all images with letter and id
+for idx, folder in enumerate(os.listdir(basedir)):
+    folder_base = os.path.join(basedir, folder)
+
+    for index, letter in enumerate(os.listdir(folder_base)):
+        folder_letter = os.path.join(folder_base, letter)
+
+        for count, image in enumerate(os.listdir(folder_letter)):
+            dst = str(letter) + str(counts["count_{0}".format(str(letter))]) + ".png"
+
+            if "depth" in str(image):
+                os.remove(os.path.join(folder_letter, image))
+            else:
+                src = os.path.join(folder_letter, image)
+                dst = os.path.join(folder_letter, dst)
+
+                os.rename(src, dst)
+
+                counts["count_{0}".format(str(letter))] += 1
+
+#-----------------------------------------------------------------------------------------------------------------------
+# ORGANIZE DATA INTO TRAIN, VALIDATION AND TEST DIRECTORIES
+#-----------------------------------------------------------------------------------------------------------------------
+
+# create directories for the train, val and test splits
+train_dir = os.path.join(destinationdir, 'train')
+os.mkdir(train_dir)
+val_dir = os.path.join(destinationdir, 'validation')
+os.mkdir(val_dir)
+test_dir = os.path.join(destinationdir, 'test')
+os.mkdir(test_dir)
+
+# create directories with classes
+
+for dir in [train_dir, val_dir, test_dir]:
+    for letter in alphabet_lower:
+        os.mkdir(os.path.join(dir, letter))
+
+# 350 images to each class in training
+# 70 images from each person's folder
+images_per_person = 400
+
+for idx, folder in enumerate(os.listdir(basedir)):
+    folder_base = os.path.join(basedir, folder)
+
+    for index, letter in enumerate(os.listdir(folder_base)):
+        folder_letter_source = os.path.join(folder_base, letter)
+        folder_letter_destiny = os.path.join(train_dir, letter)                             # updated to train_dir
+
+        images_kept = random.sample(os.listdir(folder_letter_source), k=images_per_person)
+
+        for image in images_kept:
+            src = os.path.join(folder_letter_source, image)
+            dst = os.path.join(folder_letter_destiny, image)
+            shutil.copyfile(src, dst)
+
+# move 50 images from train to validation
+# move 50 images from train to test
+images_for_test = 500
+
+for index, letter in enumerate(os.listdir(train_dir)):
+    folder_letter_source = os.path.join(train_dir, letter)
+    folder_letter_destiny_val = os.path.join(val_dir, letter)
+    folder_letter_destiny_test = os.path.join(test_dir, letter)
+
+    images_val = random.sample(os.listdir(folder_letter_source), k=images_for_test)
+    for image in images_val:
+        src = os.path.join(folder_letter_source, image)
+        dst = os.path.join(folder_letter_destiny_val, image)
+        shutil.move(src, dst)
+
+    images_test = random.sample(os.listdir(folder_letter_source), k=images_for_test)
+    for image in images_test:
+        src = os.path.join(folder_letter_source, image)
+        dst = os.path.join(folder_letter_destiny_test, image)
+        shutil.move(src, dst)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
 # SIZE OF THE IMAGES
 #-----------------------------------------------------------------------------------------------------------------------
 
-basedir = r'C:\Users\TITA\Downloads\data'
-basedir= r'.\data'
 
-data1000 = (basedir + r"/data1000")
+
+
 train_dir = (data1000 + r"/train")
 val_dir = (data1000 + r"/validation")
 test_dir = (data1000 + r"/test" )
@@ -227,8 +233,7 @@ test_red_dir = (data1000 + r'/test_red')
 os.mkdir(test_red_dir)
 
 
-alphabet_lower.remove('j')
-alphabet_lower.remove('z')
+
 for letter in alphabet_lower:
     os.mkdir(os.path.join(train_red_dir, letter))
     os.mkdir(os.path.join(val_red_dir, letter))
