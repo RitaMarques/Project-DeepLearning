@@ -10,31 +10,29 @@ from keras import optimizers
 from keras.preprocessing import image
 from keras.preprocessing.image import ImageDataGenerator
 import matplotlib.pyplot as plt
+import kaggle
 
 # #-----------------------------------------------------------------------------------------------------------------------
 # # LOAD THE DATA
 # #-----------------------------------------------------------------------------------------------------------------------
-# TODO: get data directly from online
-# creating the data folder
+
+# creating the data folder and the folder that will contain the original dataset
 try:
-    os.makedirs('./path/to/somewhere')
+    os.makedirs('data')
 except OSError:
     pass
-os.mkdir('data')
-os.mkdir(r'data/before')
+
+try:
+    os.makedirs(r'data/before')
+except OSError:
+    pass
+
 
 # this code will download the data (it has 2GB). If the data is already downloaded this step can be skipped
-data_url = 'www.cvssp.org/FingerSpellingKinect2011/fingerspelling5.tar.bz2'
-import requests
-req = requests.get(data_url)
-zname = "fingerspelling5.tar.bz2"
-zfile = open(zname, 'wb')
-zfile.write(req.content)
-zfile.close()
+kaggle.api.authenticate()
+kaggle.api.dataset_download_files('mrgeislinger/asl-rgb-depth-fingerspelling-spelling-it-out', path=r'data/before', unzip=True)
 
-shutil.unpack_archive("fingerspelling5.tar.bz2")
 
-#req.content
 # #-----------------------------------------------------------------------------------------------------------------------
 # # PREPROCESS DATA
 # #-----------------------------------------------------------------------------------------------------------------------
