@@ -175,6 +175,11 @@ ax.set_xlabel('Aspect ratio of image')
 ax.set_ylabel('Number of images')
 plt.show()
 
+# distribution of aspect ratio by handshape
+img_df['handshape'] = img_df['filename'].apply(lambda x: x[0])
+img_df['aspect_ratio'].hist(by=img_df['handshape'])
+
+
 #-----------------------------------------------------------------------------------------------------------------------
 # DATA PRE-PROCESSING
 #-----------------------------------------------------------------------------------------------------------------------
