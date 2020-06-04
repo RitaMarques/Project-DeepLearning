@@ -33,7 +33,7 @@ shutil.unpack_archive("fingerspelling5.tar.bz2")
 # #-----------------------------------------------------------------------------------------------------------------------
 # # PREPROCESS DATA
 # #-----------------------------------------------------------------------------------------------------------------------
-basedir = r'C:\Users\TITA\Downloads\PREPROCESS DATASET'
+basedir = r'.\PREPROCESS DATASET'
 destinydir = r'.\data'
 
 # Alphabet
@@ -126,10 +126,15 @@ alphabet_lower = list(string.ascii_lowercase)
 #-----------------------------------------------------------------------------------------------------------------------
 # SIZE OF THE IMAGES
 #-----------------------------------------------------------------------------------------------------------------------
+baserita = r'C:\Users\TITA\Downloads\data\data1000'
+train_dir = os.path.join(baserita, 'train')
+val_dir = os.path.join(baserita, 'validation')
+test_dir = os.path.join(baserita, 'test')
 
-train_dir = r'.\data\train'
-val_dir = r'.\data\validation'
-test_dir = r'.\data\test'
+train_dir = r'.\data1000\train'
+val_dir = r'.\data1000\validation'
+test_dir = r'.\data1000\test'
+
 
 img_dict = {'filename':[], 'width':[], 'height':[]}
 for index, letter in enumerate(os.listdir(train_dir)):
@@ -191,14 +196,48 @@ size_desc = img_df.describe()
 # DATA PRE-PROCESSING
 #-----------------------------------------------------------------------------------------------------------------------
 
-os.mkdir('data/train_red')
+os.mkdir(os.path.join(train_dir, 'train_red'))
+train_red_dir = os.path.join(train_dir, 'train_red')
+
+os.mkdir(r'C:\Users\TITA\Downloads\data1000\val_red')
+val_red_dir = r'C:\Users\TITA\Downloads\data1000\val_red'
+os.mkdir(r'C:\Users\TITA\Downloads\data1000\test_red')
+test_red_dir = r'C:\Users\TITA\Downloads\data1000\test_red'
+
+alphabet_lower.remove('j')
+alphabet_lower.remove('z')
+for letter in alphabet_lower:
+    os.mkdir(os.path.join(train_red_dir, letter))
+    os.mkdir(os.path.join(val_red_dir, letter))
+    os.mkdir(os.path.join(test_red_dir, letter))
+
+
 for index, letter in enumerate(os.listdir(train_dir)):
     folder_letter = os.path.join(train_dir, letter)
     file_list = [x for x in os.listdir(folder_letter)]
     for img_filename in file_list:
-        image = Image.open(img_filename)
+        img_path = os.path.join(train_dir, letter, img_filename)
+        image = Image.open(img_path)
         r,g,b = image.split()
-        r.save('data/train_red/', 'red_' + img_filename)
+        r.save(os.path.join(train_red_dir, letter, img_filename))
+
+for index, letter in enumerate(os.listdir(val_dir)):
+    folder_letter = os.path.join(val_dir, letter)
+    file_list = [x for x in os.listdir(folder_letter)]
+    for img_filename in file_list:
+        img_path = os.path.join(val_dir, letter, img_filename)
+        image = Image.open(img_path)
+        r,g,b = image.split()
+        r.save(os.path.join(val_red_dir, letter, img_filename))
+
+for index, letter in enumerate(os.listdir(test_dir)):
+    folder_letter = os.path.join(test_dir, letter)
+    file_list = [x for x in os.listdir(folder_letter)]
+    for img_filename in file_list:
+        img_path = os.path.join(test_dir, letter, img_filename)
+        image = Image.open(img_path)
+        r,g,b = image.split()
+        r.save(os.path.join(test_red_dir, letter, img_filename))
 
 
 # creates tensors out of the data (normalizing the images)
@@ -233,8 +272,8 @@ test_generator = test_datagen.flow_from_directory(
 #-----------------------------------------------------------------------------------------------------------------------
 model = models.Sequential()
 
-# feature maps extracted: 32   # filter: (3x3)  slider: 1                             (width, height, feature maps)
-model.add(layers.Conv2D(100, (3, 3), activation='relu', input_shape=(150, 150, 3), padding='same'))
+# feature maps extracted: 32   # filter: (3x3)  slider: 1
+model.add(layers.Conv2D(100, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
 model.add(layers.Conv2D(200, (3, 3), activation='relu', padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
