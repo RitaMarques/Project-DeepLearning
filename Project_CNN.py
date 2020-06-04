@@ -136,6 +136,10 @@ val_dir = r'.\data1000\validation'
 test_dir = r'.\data1000\test'
 
 
+train_dir = r'.\data\train'
+val_dir = r'.\data\validation'
+test_dir = r'.\data\test'
+
 img_dict = {'filename':[], 'width':[], 'height':[]}
 for index, letter in enumerate(os.listdir(train_dir)):
     folder_letter = os.path.join(train_dir, letter)
@@ -186,6 +190,10 @@ plt.show()
 # distribution of aspect ratio by handshape
 img_df['handshape'] = img_df['filename'].apply(lambda x: x[0])
 img_df['aspect_ratio'].hist(by=img_df['handshape'])
+plt.show()
+
+# descriptive statistics for size
+size_desc = img_df.describe()
 
 img_df["width_height"] = img_df[["width" , "height"]].apply(lambda row: "_".join(row.values.astype(str)) , axis=1)
 img_df["counts_w_l"] = img_df.groupby(["width_height"]).transform("count")
@@ -209,30 +217,39 @@ img_df
 # DATA PRE-PROCESSING
 #-----------------------------------------------------------------------------------------------------------------------
 
+os.mkdir('data/train_red')
+for index, letter in enumerate(os.listdir(train_dir)):
+    folder_letter = os.path.join(train_dir, letter)
+    file_list = [x for x in os.listdir(folder_letter)]
+    for img_filename in file_list:
+        image = Image.open(img_filename)
+        r,g,b = image.split()
+        r.save('data/train_red/', 'red_' + img_filename)
 
-# creates tensors out of the data
-train_datagen = ImageDataGenerator()
-val_datagen = ImageDataGenerator()
-test_datagen = ImageDataGenerator()
+
+# creates tensors out of the data (normalizing the images)
+train_datagen = ImageDataGenerator(rescale=1.0/255.0)
+val_datagen = ImageDataGenerator(rescale=1.0/255.0)
+test_datagen = ImageDataGenerator(rescale=1.0/255.0)
 
 train_generator = train_datagen.flow_from_directory(
     train_dir,
-    target_size=(100, 100),  # resizes all images
-    batch_size=20,
+    target_size=(150, 150),  # resizes all images
+    batch_size=50,
     class_mode='categorical'
 )
 
 validation_generator = val_datagen.flow_from_directory(
     val_dir,
-    target_size=(100, 100),  # resizes all images
-    batch_size=10,
+    target_size=(150, 150),  # resizes all images
+    batch_size=50,
     class_mode='categorical'
 )
 
 test_generator = test_datagen.flow_from_directory(
     test_dir,
-    target_size=(100, 100),  # resizes all images
-    batch_size=10,
+    target_size=(150, 150),  # resizes all images
+    batch_size=50,
     class_mode='categorical'
 )
 
@@ -244,18 +261,18 @@ test_generator = test_datagen.flow_from_directory(
 model = models.Sequential()
 
 # feature maps extracted: 32   # filter: (3x3)  slider: 1                             (width, height, feature maps)
-model.add(layers.Conv2D(100, (3, 3), activation='relu', input_shape=(100, 100, 3), padding='same'))     # (148, 148,  32)
-model.add(layers.MaxPooling2D(2, 2))                                                    # ( 74,  74,  32)
-model.add(layers.Conv2D(200, (3, 3), activation='relu', padding='same'))                                # ( 72,  72,  64)
-model.add(layers.MaxPooling2D(2, 2))                                                    # ( 36,  36,  64)
-model.add(layers.Conv2D(400, (3, 3), activation='relu', padding='same'))                                # ( 34,  34, 128)
-model.add(layers.MaxPooling2D(2, 2))                                                    # ( 17,  17, 128)
-model.add(layers.Conv2D(400, (3, 3), activation='relu', padding='same'))                                # ( 15,  15, 128)
-model.add(layers.MaxPooling2D(2, 2))                                                    # (  7,   7, 128)
-model.add(layers.Flatten())  # vectorize to one dimensional representation              # (6272)
+model.add(layers.Conv2D(100, (3, 3), activation='relu', input_shape=(150, 150, 3), padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(200, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(400, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(400, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Flatten())  # vectorize to one dimensional representation
 #model.add(layers.Dropout(0.5))
-#model.add(layers.Dense(400, activation='relu'))                                         # (512) number of neurons
-model.add(layers.Dense(24, activation='softmax'))                                        # (1) number of neurons
+#model.add(layers.Dense(400, activation='relu'))
+model.add(layers.Dense(24, activation='softmax'))
 
 # model.summary()  # get as the shapes and number of params
 
