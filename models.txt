@@ -1,0 +1,13 @@
+------------ MODEL 0 -----------------------
+loss: 0.0229 - acc: 0.9974 - val_loss: 0.0000e+00 - val_acc: 0.9627
+
+model.add(layers.Conv2D(100, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(150, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(300, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(300, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Flatten())  # vectorize to one dimensional representation
+model.add(layers.Dense(24, activation='softmax'))

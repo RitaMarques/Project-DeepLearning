@@ -17,6 +17,11 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 import tarfile
 
+from numpy.random import seed
+from tensorflow import random as tfrandom
+seed(5)
+tfrandom.set_seed(5)
+
 #-----------------------------------------------------------------------------------------------------------------------
 # LOADING THE DATA
 #-----------------------------------------------------------------------------------------------------------------------
@@ -308,7 +313,7 @@ test_datagen = ImageDataGenerator(rescale=1.0/255.0)
 train_generator = train_datagen.flow_from_directory(
     train_red_dir,
     target_size=(150, 150),  # resizes all images
-    batch_size=10,
+    batch_size=20,
     class_mode='categorical',
     color_mode='grayscale'
 )
@@ -316,7 +321,7 @@ train_generator = train_datagen.flow_from_directory(
 validation_generator = val_datagen.flow_from_directory(
     val_red_dir,
     target_size=(150, 150),  # resizes all images
-    batch_size=10,
+    batch_size=20,
     class_mode='categorical',
     color_mode='grayscale'
 )
@@ -324,7 +329,7 @@ validation_generator = val_datagen.flow_from_directory(
 test_generator = test_datagen.flow_from_directory(
     test_red_dir,
     target_size=(150, 150),  # resizes all images
-    batch_size=10,
+    batch_size=20,
     class_mode='categorical',
     color_mode='grayscale',
     shuffle=False
@@ -355,8 +360,8 @@ model.add(layers.Dense(24, activation='softmax'))
 
 model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['acc'])
 
-history = model.fit_generator(train_generator, steps_per_epoch=2400, epochs=15,
-                              validation_data=validation_generator, validation_steps=50)
+history = model.fit_generator(train_generator, steps_per_epoch=1200, epochs=15,
+                              validation_data=validation_generator, validation_steps=240)
 
 # save the model
 id_num = input("Insert GridSearch ID number: ")
