@@ -3,7 +3,7 @@
 # IMPORTING NEEDED PACKAGES
 #-----------------------------------------------------------------------------------------------------------------------
 
-import os, random
+import os , random
 import string
 import shutil
 import pandas as pd
@@ -18,7 +18,7 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 import tarfile
 import urllib
-from zipfile import ZipFile
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 # LOADING THE DATA
