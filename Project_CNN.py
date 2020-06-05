@@ -349,8 +349,9 @@ history = model.fit_generator(train_generator, steps_per_epoch=100, epochs=15,
                               validation_data=validation_generator, validation_steps=50)
 
 # save the model
-model.save_weights('model2_weights.h5')
-model.save('model2_keras.h5')
+id_num = input("Insert GridSearch ID number: ")
+model.save_weights('model2_weights{}.h5'.format(id_num))
+model.save('model2_keras{}.h5'.format(id_num))
 
 # apply model to the test set
 preds = model.predict(test_datagen.flow_from_directory(test_red_dir, target_size=(150, 150), batch_size=50,
