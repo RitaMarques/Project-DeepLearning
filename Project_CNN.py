@@ -10,12 +10,12 @@ import pandas as pd
 from PIL import Image
 from keras import layers
 from keras import models
-from keras import optimizers
-from keras.preprocessing import image
 from keras.preprocessing.image import ImageDataGenerator
 import matplotlib.pyplot as plt
 import kaggle
 from tqdm import tqdm
+import numpy as np
+from sklearn.metrics import confusion_matrix
 
 #-----------------------------------------------------------------------------------------------------------------------
 # LOADING THE DATA
@@ -265,21 +265,25 @@ train_generator = train_datagen.flow_from_directory(
     train_red_dir,
     target_size=(150, 150),  # resizes all images
     batch_size=50,
-    class_mode='categorical'
+    class_mode='categorical',
+    color_mode='grayscale'
 )
 
 validation_generator = val_datagen.flow_from_directory(
     val_red_dir,
     target_size=(150, 150),  # resizes all images
     batch_size=50,
-    class_mode='categorical'
+    class_mode='categorical',
+    color_mode='grayscale'
 )
 
 test_generator = test_datagen.flow_from_directory(
     test_red_dir,
     target_size=(150, 150),  # resizes all images
     batch_size=50,
-    class_mode='categorical'
+    class_mode='categorical',
+    color_mode='grayscale',
+    shuffle=False
 )
 
 
@@ -289,8 +293,8 @@ test_generator = test_datagen.flow_from_directory(
 
 model = models.Sequential()
 
-# feature maps extracted: 32   # filter: (3x3)  slider: 1
-model.add(layers.Conv2D(100, (3, 3), activation='relu', input_shape=(150, 150, 3), padding='same'))
+# feature maps extracted: 100, filter: (3x3), slider: 1
+model.add(layers.Conv2D(100, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
 model.add(layers.Conv2D(200, (3, 3), activation='relu', padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
@@ -307,16 +311,22 @@ model.add(layers.Dense(24, activation='softmax'))
 
 model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['acc'])
 
-history = model.fit_generator(train_generator, steps_per_epoch=100, epochs=30,
+history = model.fit_generator(train_generator, steps_per_epoch=100, epochs=15,
                               validation_data=validation_generator, validation_steps=50)
 
 # save the model
-model.save_weights('model1_weights.h5')
-model.save('model1_keras.h5')
+model.save_weights('model2_weights.h5')
+model.save('model2_keras.h5')
 
 # apply model to the test set
-pred = model.predict(test_generator)
-# analyze outputs to see how can we obtain the accuracy in test set
+preds = model.predict(test_datagen.flow_from_directory(test_red_dir, target_size=(150, 150), batch_size=50,
+                                                       class_mode='categorical', shuffle=False))
+predicted_class_indices = np.argmax(preds, axis=1)
+test_labels = test_generator.labels
+
+cm = confusion_matrix(test_labels, predicted_class_indices)
+acc_test = model.evaluate_generator(test_generator)[1]
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 # ANALYZING OVERFITTING
@@ -335,7 +345,7 @@ plt.plot(epochs, acc, 'bo', label='Training acc')
 plt.plot(epochs, val_acc, 'b', label='Validation acc')
 plt.title('Training and Validation Accuracy')
 plt.xlabel('Epochs')
-plt.ylabel('Loss')
+plt.ylabel('Accuracy')
 plt.legend()
 
 plt.figure()
