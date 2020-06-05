@@ -21,15 +21,46 @@ import tarfile
 # LOADING THE DATA
 #-----------------------------------------------------------------------------------------------------------------------
 
+# creating the data folder that will contain all the datasets
+# (if these folders already exist, the process of creating them will be skipped
 def createdir(mydir):
     try:
         os.mkdir(mydir)
     except OSError:
         pass
 
-# creating the data folder that will contain all the datasets
-# (if these folders already exist, the process of creating them will be skipped
+# set basedir
+#basedir = r'C:\Users\TITA\Downloads\data'
+basedir = r'.\data'
+
+# define directories
+data1000 = (basedir + r"\data1000")
+originaldir = (basedir + r"\original")
+destinationdir = data1000
+# define directories for the train, val and test splits
+train_dir = os.path.join(destinationdir, 'train')
+val_dir = os.path.join(destinationdir, 'validation')
+test_dir = os.path.join(destinationdir, 'test')
+train_red_dir = (basedir + r'\red\train_red')
+val_red_dir = (basedir + r'\red\val_red')
+test_red_dir = (basedir + r'\red\test_red')
+
+#create all the directories
 createdir(r'data')
+createdir(data1000)
+createdir(train_dir)
+createdir(val_dir)
+createdir(test_dir)
+createdir(basedir + r"\red")
+createdir(train_red_dir)
+createdir(val_red_dir)
+createdir(test_red_dir)
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# LOADING THE DATA
+#-----------------------------------------------------------------------------------------------------------------------
+
 
 # this code will download the data (it has 2GB). If the data is already downloaded this step can be skipped
 kaggle.api.authenticate()
@@ -40,9 +71,6 @@ os.rename(r".\data\dataset5", r".\data\original")
 #-----------------------------------------------------------------------------------------------------------------------
 # GET DATA NO KAGGLE
 #-----------------------------------------------------------------------------------------------------------------------
-basedir = r'C:\Users\TITA\Downloads\data'
-#basedir = r'.\data'
-
 import requests
 
 url = "http://www.cvssp.org/FingerSpellingKinect2011/fingerspelling5.tar.bz2"
@@ -76,12 +104,6 @@ if os.path.exists(filename):
 #-----------------------------------------------------------------------------------------------------------------------
 # PREPROCESS DATA
 #-----------------------------------------------------------------------------------------------------------------------
-
-data1000 = (basedir + r"\data1000")
-createdir(data1000)
-
-originaldir = (basedir + r"\original")
-destinationdir = data1000
 
 # Alphabet
 alphabet_lower = list(string.ascii_lowercase)
@@ -117,14 +139,8 @@ for idx, folder in tqdm(enumerate(os.listdir(originaldir))):
 # ORGANIZE DATA INTO TRAIN, VALIDATION AND TEST DIRECTORIES
 #-----------------------------------------------------------------------------------------------------------------------
 
-# create directories for the train, val and test splits
-train_dir = os.path.join(destinationdir, 'train')
-val_dir = os.path.join(destinationdir, 'validation')
-test_dir = os.path.join(destinationdir, 'test')
-
-createdir(train_dir)
-createdir(val_dir)
-createdir(test_dir)
+# setting the random state for reproducibility
+random.seed(20)
 
 # create directories for each class (label)
 for dir in [train_dir, val_dir, test_dir]:
@@ -241,17 +257,8 @@ plt.scatter(x, y, s=z*10, alpha=0.5, )
 plt.show()
 
 #-----------------------------------------------------------------------------------------------------------------------
-# DATA PRE-PROCESSING
+# DATA REDUCTION TO RED CHANNEL
 #-----------------------------------------------------------------------------------------------------------------------
-
-train_red_dir = (basedir + r'\red\train_red')
-val_red_dir = (basedir + r'\red\val_red')
-test_red_dir = (basedir + r'\red\test_red')
-
-createdir(basedir + r"\red")
-createdir(train_red_dir)
-createdir(val_red_dir)
-createdir(test_red_dir)
 
 # create directories for each class (label)
 for letter in alphabet_lower:
@@ -259,7 +266,7 @@ for letter in alphabet_lower:
     createdir(os.path.join(val_red_dir, letter))
     createdir(os.path.join(test_red_dir, letter))
 
-# convert all images in train to red spectrum copying them to a new train folder
+# convert all images in train to only use red channel copying them to a new train folder
 for index, letter in enumerate(os.listdir(train_dir)):
     folder_letter = os.path.join(train_dir, letter)
     file_list = [x for x in os.listdir(folder_letter)]
@@ -269,7 +276,7 @@ for index, letter in enumerate(os.listdir(train_dir)):
         r, g, b = image.split()
         r.save(os.path.join(train_red_dir, letter, img_filename))
 
-# convert all images in validation to red spectrum copying them to a new validation folder
+# convert all images in validation to use red channel copying them to a new validation folder
 for index, letter in tqdm(enumerate(os.listdir(val_dir))):
     folder_letter = os.path.join(val_dir, letter)
     file_list = [x for x in os.listdir(folder_letter)]
@@ -279,7 +286,7 @@ for index, letter in tqdm(enumerate(os.listdir(val_dir))):
         r, g, b = image.split()
         r.save(os.path.join(val_red_dir, letter, img_filename))
 
-# convert all images in test to red spectrum copying them to a new test folder
+# convert all images in test to use red channel copying them to a new test folder
 for index, letter in tqdm(enumerate(os.listdir(test_dir))):
     folder_letter = os.path.join(test_dir, letter)
     file_list = [x for x in os.listdir(folder_letter)]
@@ -289,6 +296,9 @@ for index, letter in tqdm(enumerate(os.listdir(test_dir))):
         r, g, b = image.split()
         r.save(os.path.join(test_red_dir, letter, img_filename))
 
+#-----------------------------------------------------------------------------------------------------------------------
+# IMAGE DATA GENERATOR - CREATE TENSORS
+#-----------------------------------------------------------------------------------------------------------------------
 
 # creates tensors out of the data (normalizing the images)
 train_datagen = ImageDataGenerator(rescale=1.0/255.0)
@@ -298,7 +308,7 @@ test_datagen = ImageDataGenerator(rescale=1.0/255.0)
 train_generator = train_datagen.flow_from_directory(
     train_red_dir,
     target_size=(150, 150),  # resizes all images
-    batch_size=50,
+    batch_size=10,
     class_mode='categorical',
     color_mode='grayscale'
 )
@@ -306,7 +316,7 @@ train_generator = train_datagen.flow_from_directory(
 validation_generator = val_datagen.flow_from_directory(
     val_red_dir,
     target_size=(150, 150),  # resizes all images
-    batch_size=50,
+    batch_size=10,
     class_mode='categorical',
     color_mode='grayscale'
 )
@@ -314,7 +324,7 @@ validation_generator = val_datagen.flow_from_directory(
 test_generator = test_datagen.flow_from_directory(
     test_red_dir,
     target_size=(150, 150),  # resizes all images
-    batch_size=50,
+    batch_size=10,
     class_mode='categorical',
     color_mode='grayscale',
     shuffle=False
@@ -330,11 +340,11 @@ model = models.Sequential()
 # feature maps extracted: 100, filter: (3x3), slider: 1
 model.add(layers.Conv2D(100, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(200, (3, 3), activation='relu', padding='same'))
+model.add(layers.Conv2D(150, (3, 3), activation='relu', padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(400, (3, 3), activation='relu', padding='same'))
+model.add(layers.Conv2D(300, (3, 3), activation='relu', padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(400, (3, 3), activation='relu', padding='same'))
+model.add(layers.Conv2D(300, (3, 3), activation='relu', padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
 model.add(layers.Flatten())  # vectorize to one dimensional representation
 #model.add(layers.Dropout(0.5))
@@ -345,7 +355,7 @@ model.add(layers.Dense(24, activation='softmax'))
 
 model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['acc'])
 
-history = model.fit_generator(train_generator, steps_per_epoch=100, epochs=15,
+history = model.fit_generator(train_generator, steps_per_epoch=2400, epochs=15,
                               validation_data=validation_generator, validation_steps=50)
 
 # save the model
