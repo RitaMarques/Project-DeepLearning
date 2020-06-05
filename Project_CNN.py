@@ -16,6 +16,9 @@ import kaggle
 from tqdm import tqdm
 import numpy as np
 from sklearn.metrics import confusion_matrix
+import tarfile
+import urllib
+from zipfile import ZipFile
 
 #-----------------------------------------------------------------------------------------------------------------------
 # LOADING THE DATA
@@ -38,10 +41,44 @@ kaggle.api.dataset_download_files('mrgeislinger/asl-rgb-depth-fingerspelling-spe
 os.rename(r".\data\dataset5", r".\data\original")
 
 #-----------------------------------------------------------------------------------------------------------------------
+# GET DATA NO KAGGLE
+#-----------------------------------------------------------------------------------------------------------------------
+#basedir = r'C:\Users\TITA\Downloads\data'
+basedir = r'.\data'
+
+import requests
+
+url = "http://www.cvssp.org/FingerSpellingKinect2011/fingerspelling5.tar.bz2"
+filename = os.path.join(basedir , url.split("/")[-1])
+if os.path.exists(filename):
+    pass
+else:
+    with open(filename, "wb") as f:
+        r = requests.get(url)
+        f.write(r.content)
+
+tar = tarfile.open(filename, ("r:" + str(filename).split(".")[-1]))
+tar.extractall(path=basedir)
+tar.close()
+os.rename(r".\data\dataset5", r".\data\original")
+
+# optional file delete
+if os.path.exists(filename):
+    reply = input("Delete original file " + filename + "? [y/[n]] ")
+    if reply == 'y':
+        os.remove(filename)
+
+
+#simple
+#http://www.cvssp.org/FingerSpellingKinect2011/fingerspelling5.tar.bz2
+
+#hard
+#http://www.cvssp.org/FingerSpellingKinect2011/dataset9-depth.tar.gz
+
+
+#-----------------------------------------------------------------------------------------------------------------------
 # PREPROCESS DATA
 #-----------------------------------------------------------------------------------------------------------------------
-basedir = r'C:\Users\TITA\Downloads\data'
-#basedir = r'.\data'
 
 data1000 = (basedir + r"\data1000")
 createdir(data1000)
