@@ -1,7 +1,7 @@
 
-# #-----------------------------------------------------------------------------------------------------------------------
-# # IMPORTING NEEDED PACKAGES
-# #-----------------------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------------------
+# IMPORTING NEEDED PACKAGES
+#-----------------------------------------------------------------------------------------------------------------------
 
 import os, random
 import string
@@ -17,9 +17,9 @@ import matplotlib.pyplot as plt
 import kaggle
 from tqdm import tqdm
 
-# #-----------------------------------------------------------------------------------------------------------------------
-# # LOADING THE DATA
-# #-----------------------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------------------
+# LOADING THE DATA
+#-----------------------------------------------------------------------------------------------------------------------
 
 def createdir(mydir):
     try:
@@ -27,7 +27,7 @@ def createdir(mydir):
     except OSError:
         pass
 
-# creating the data folder and the folder that will contain the original dataset
+# creating the data folder that will contain all the datasets
 # (if these folders already exist, the process of creating them will be skipped
 createdir(r'data')
 
@@ -35,24 +35,22 @@ createdir(r'data')
 kaggle.api.authenticate()
 kaggle.api.dataset_download_files('mrgeislinger/asl-rgb-depth-fingerspelling-spelling-it-out', path=r'data', unzip=True)
 
-os.rename(r".\data\dataset5" , r".\data\original" )
+os.rename(r".\data\dataset5", r".\data\original")
 
-# #-----------------------------------------------------------------------------------------------------------------------
-# # PREPROCESS DATA
-# #-----------------------------------------------------------------------------------------------------------------------
-#basedir = r'C:\Users\TITA\Downloads\data'
-basedir= r'.\data'
+#-----------------------------------------------------------------------------------------------------------------------
+# PREPROCESS DATA
+#-----------------------------------------------------------------------------------------------------------------------
+basedir = r'C:\Users\TITA\Downloads\data'
+#basedir = r'.\data'
 
 data1000 = (basedir + r"\data1000")
 createdir(data1000)
 
-originaldir = r'.\data\original'
+originaldir = (basedir + r"\original")
 destinationdir = data1000
 
 # Alphabet
-
 alphabet_lower = list(string.ascii_lowercase)
-
 alphabet_lower.remove('j')
 alphabet_lower.remove('z')
 
@@ -60,7 +58,7 @@ counts = {}
 for letter in alphabet_lower:
         counts["count_{0}".format(letter)] = 0
 
-# Rename all images with letter and id
+# Rename all images with letter and id (inplace)
 for idx, folder in tqdm(enumerate(os.listdir(originaldir))):
     folder_base = os.path.join(originaldir, folder)
 
@@ -94,12 +92,12 @@ createdir(train_dir)
 createdir(val_dir)
 createdir(test_dir)
 
-# create directories with classes
+# create directories for each class (label)
 for dir in [train_dir, val_dir, test_dir]:
     for letter in alphabet_lower:
         createdir(os.path.join(dir, letter))
 
-# Select the number of images to each class in training
+# Select the number of images for each class in training
 # Select images from each person's folder
 images_per_person = 280
 
@@ -108,7 +106,7 @@ for idx, folder in tqdm(enumerate(os.listdir(originaldir))):
 
     for index, letter in enumerate(os.listdir(folder_base)):
         folder_letter_source = os.path.join(folder_base, letter)
-        folder_letter_destiny = os.path.join(train_dir, letter)                             # updated to train_dir
+        folder_letter_destiny = os.path.join(train_dir, letter)
 
         images_kept = random.sample(os.listdir(folder_letter_source), k=images_per_person)
 
@@ -117,8 +115,7 @@ for idx, folder in tqdm(enumerate(os.listdir(originaldir))):
             dst = os.path.join(folder_letter_destiny, image)
             shutil.copyfile(src, dst)
 
-# Select images for validation/test
-
+# Select images for validation/test from train
 images_for_test_val = 200
 
 for index, letter in enumerate(os.listdir(train_dir)):
@@ -140,11 +137,10 @@ for index, letter in enumerate(os.listdir(train_dir)):
 
 
 #-----------------------------------------------------------------------------------------------------------------------
-# SIZE OF THE IMAGES
+# EXPLORE IMAGES' SIZE
 #-----------------------------------------------------------------------------------------------------------------------
 
-
-img_dict = {'filename':[], 'width':[], 'height':[]}
+img_dict = {'filename': [], 'width': [], 'height': []}
 for index, letter in enumerate(os.listdir(train_dir)):
     folder_letter = os.path.join(train_dir, letter)
     file_list = [x for x in os.listdir(folder_letter)]
@@ -158,7 +154,7 @@ for index, letter in enumerate(os.listdir(train_dir)):
         img_dict['width'].append(width)
         img_dict['height'].append(height)
 
-# creating a dataframe with the image sizes
+# creating a dataframe with the image's sizes
 img_df = pd.DataFrame(data=img_dict)
 img_df['area'] = img_df['height'] * img_df['width']
 img_df['aspect_ratio'] = img_df['width'] / img_df['height']
@@ -214,49 +210,49 @@ plt.show()
 # DATA PRE-PROCESSING
 #-----------------------------------------------------------------------------------------------------------------------
 
-
 train_red_dir = (basedir + r'\red\train_red')
 val_red_dir = (basedir + r'\red\val_red')
 test_red_dir = (basedir + r'\red\test_red')
 
-# TODO: Verificar se posso criar directamente as subdirectorias sem criar a red primeiro
 createdir(basedir + r"\red")
 createdir(train_red_dir)
 createdir(val_red_dir)
 createdir(test_red_dir)
 
-
+# create directories for each class (label)
 for letter in alphabet_lower:
     createdir(os.path.join(train_red_dir, letter))
     createdir(os.path.join(val_red_dir, letter))
     createdir(os.path.join(test_red_dir, letter))
 
-
+# convert all images in train to red spectrum copying them to a new train folder
 for index, letter in enumerate(os.listdir(train_dir)):
     folder_letter = os.path.join(train_dir, letter)
     file_list = [x for x in os.listdir(folder_letter)]
     for img_filename in file_list:
         img_path = os.path.join(train_dir, letter, img_filename)
         image = Image.open(img_path)
-        r,g,b = image.split()
+        r, g, b = image.split()
         r.save(os.path.join(train_red_dir, letter, img_filename))
 
+# convert all images in validation to red spectrum copying them to a new validation folder
 for index, letter in tqdm(enumerate(os.listdir(val_dir))):
     folder_letter = os.path.join(val_dir, letter)
     file_list = [x for x in os.listdir(folder_letter)]
     for img_filename in file_list:
         img_path = os.path.join(val_dir, letter, img_filename)
         image = Image.open(img_path)
-        r,g,b = image.split()
+        r, g, b = image.split()
         r.save(os.path.join(val_red_dir, letter, img_filename))
 
+# convert all images in test to red spectrum copying them to a new test folder
 for index, letter in tqdm(enumerate(os.listdir(test_dir))):
     folder_letter = os.path.join(test_dir, letter)
     file_list = [x for x in os.listdir(folder_letter)]
     for img_filename in file_list:
         img_path = os.path.join(test_dir, letter, img_filename)
         image = Image.open(img_path)
-        r,g,b = image.split()
+        r, g, b = image.split()
         r.save(os.path.join(test_red_dir, letter, img_filename))
 
 
@@ -311,8 +307,43 @@ model.add(layers.Dense(24, activation='softmax'))
 
 model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['acc'])
 
-#-----------------------------------------------------------------------------------------------------------------------
-# FITTING THE MODEL
-#-----------------------------------------------------------------------------------------------------------------------
 history = model.fit_generator(train_generator, steps_per_epoch=100, epochs=30,
                               validation_data=validation_generator, validation_steps=50)
+
+# save the model
+model.save_weights('model1_weights.h5')
+model.save('model1_keras.h5')
+
+# apply model to the test set
+pred = model.predict(test_generator)
+# analyze outputs to see how can we obtain the accuracy in test set
+
+#-----------------------------------------------------------------------------------------------------------------------
+# ANALYZING OVERFITTING
+#-----------------------------------------------------------------------------------------------------------------------
+
+# DISPLAYING CURVES OF LOSS AND ACCURACY DURING TRAINING
+acc = history.history['acc']
+val_acc = history.history['val_acc']
+
+loss = history.history['loss']
+val_loss = history.history['val_loss']
+
+epochs = range(1, len(loss) + 1)
+
+plt.plot(epochs, acc, 'bo', label='Training acc')
+plt.plot(epochs, val_acc, 'b', label='Validation acc')
+plt.title('Training and Validation Accuracy')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.legend()
+
+plt.figure()
+
+plt.plot(epochs, loss, 'bo', label='Training loss')
+plt.plot(epochs, val_loss, 'b', label='Validation loss')
+plt.title('Training and Validation Loss')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.legend()
+plt.show()
