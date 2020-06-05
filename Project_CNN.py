@@ -301,21 +301,21 @@ test_datagen = ImageDataGenerator(rescale=1.0/255.0)
 train_generator = train_datagen.flow_from_directory(
     train_red_dir,
     target_size=(150, 150),  # resizes all images
-    batch_size=50,
+    batch_size=5,
     class_mode='categorical'
 )
 
 validation_generator = val_datagen.flow_from_directory(
     val_red_dir,
     target_size=(150, 150),  # resizes all images
-    batch_size=50,
+    batch_size=5,
     class_mode='categorical'
 )
 
 test_generator = test_datagen.flow_from_directory(
     test_red_dir,
     target_size=(150, 150),  # resizes all images
-    batch_size=50,
+    batch_size=5,
     class_mode='categorical'
 )
 
