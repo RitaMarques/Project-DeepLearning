@@ -27,7 +27,6 @@ def createdir(mydir):
     except OSError:
         pass
 
-
 # creating the data folder and the folder that will contain the original dataset
 # (if these folders already exist, the process of creating them will be skipped
 createdir(r'data')
