@@ -343,13 +343,13 @@ test_generator = test_datagen.flow_from_directory(
 model = models.Sequential()
 
 # feature maps extracted: 100, filter: (3x3), slider: 1
-model.add(layers.Conv2D(100, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
+model.add(layers.Conv2D(50, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(150, (3, 3), activation='relu', padding='same'))
+model.add(layers.Conv2D(100, (3, 3), activation='relu', padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(300, (3, 3), activation='relu', padding='same'))
+model.add(layers.Conv2D(200, (3, 3), activation='relu', padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(300, (3, 3), activation='relu', padding='same'))
+model.add(layers.Conv2D(200, (3, 3), activation='relu', padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
 model.add(layers.Flatten())  # vectorize to one dimensional representation
 #model.add(layers.Dropout(0.5))
