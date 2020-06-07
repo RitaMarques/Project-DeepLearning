@@ -1,5 +1,6 @@
 ------------ MODEL 0 -----------------------
 loss: 0.0229 - acc: 0.9974 - val_loss: 0.0000e+00 - val_acc: 0.9627
+15 epochs 1200 steps
 
 model.add(layers.Conv2D(100, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
@@ -8,6 +9,53 @@ model.add(layers.MaxPooling2D(2, 2))
 model.add(layers.Conv2D(300, (3, 3), activation='relu', padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
 model.add(layers.Conv2D(300, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Flatten())  # vectorize to one dimensional representation
+model.add(layers.Dense(24, activation='softmax'))
+
+----------- MODEL 1 -----------------------
+loss: 0.0200 - acc: 0.9973 - val_loss: 5.3644e-08 - val_acc: 0.9737
+15 epochs 1200 steps
+
+model.add(layers.Conv2D(50, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(100, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(200, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(200, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Flatten())  # vectorize to one dimensional representation
+model.add(layers.Dense(24, activation='softmax'))
+
+----------- MODEL 2 -----------------------
+loss: 0.0278 - acc: 0.9946 - val_loss: 5.9605e-09 - val_acc: 0.9746
+acc_test = 0.9781249761581421
+8 epochs 1200 steps
+
+model.add(layers.Conv2D(50, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(100, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(200, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(200, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Flatten())  # vectorize to one dimensional representation
+model.add(layers.Dense(24, activation='softmax'))
+
+----------- MODEL 3 -----------------------
+0.0371 - acc: 0.9894 - val_loss: 1.3255e-05 - val_acc: 0.9746
+acc_test: 0.9770833253860474
+5 epochs 1200 steps
+
+model.add(layers.Conv2D(30, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(60, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(120, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(120, (3, 3), activation='relu', padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
 model.add(layers.Flatten())  # vectorize to one dimensional representation
 model.add(layers.Dense(24, activation='softmax'))

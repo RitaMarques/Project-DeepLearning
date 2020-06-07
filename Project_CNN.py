@@ -343,13 +343,13 @@ test_generator = test_datagen.flow_from_directory(
 model = models.Sequential()
 
 # feature maps extracted: 100, filter: (3x3), slider: 1
-model.add(layers.Conv2D(50, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
+model.add(layers.Conv2D(30, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(100, (3, 3), activation='relu', padding='same'))
+model.add(layers.Conv2D(60, (3, 3), activation='relu', padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(200, (3, 3), activation='relu', padding='same'))
+model.add(layers.Conv2D(120, (3, 3), activation='relu', padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(200, (3, 3), activation='relu', padding='same'))
+model.add(layers.Conv2D(120, (3, 3), activation='relu', padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
 model.add(layers.Flatten())  # vectorize to one dimensional representation
 #model.add(layers.Dropout(0.5))
@@ -360,7 +360,7 @@ model.add(layers.Dense(24, activation='softmax'))
 
 model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['acc'])
 
-history = model.fit_generator(train_generator, steps_per_epoch=1200, epochs=15,
+history = model.fit_generator(train_generator, steps_per_epoch=1200, epochs=5,
                               validation_data=validation_generator, validation_steps=240)
 
 # save the model
@@ -370,7 +370,7 @@ model.save('model2_keras{}.h5'.format(id_num))
 
 # apply model to the test set
 preds = model.predict(test_datagen.flow_from_directory(test_red_dir, target_size=(150, 150), batch_size=50,
-                                                       class_mode='categorical', shuffle=False))
+                                                       class_mode='categorical', shuffle=False, color_mode='grayscale'))
 predicted_class_indices = np.argmax(preds, axis=1)
 test_labels = test_generator.labels
 
