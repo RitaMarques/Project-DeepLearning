@@ -17,9 +17,10 @@ from tqdm import tqdm
 import numpy as np
 from sklearn.metrics import confusion_matrix
 import tarfile
-
+from keras.wrappers.scikit_learn import KerasClassifier
 from numpy.random import seed
 from tensorflow import random as tfrandom
+from sklearn.model_selection import GridSearchCV
 seed(5)
 tfrandom.set_seed(5)
 
@@ -36,8 +37,8 @@ def createdir(mydir):
         pass
 
 # set basedir
-basedir = r'C:\Users\TITA\Downloads\data'
-#basedir = r'.\data'
+#basedir = r'C:\Users\TITA\Downloads\data'
+basedir = r'.\data'
 
 # define directories
 data1000 = (basedir + r"\data1000")
@@ -259,7 +260,6 @@ plt.scatter(x=img_df["width"], y=img_df["height"], s=img_df["counts_w_l"]*10,  a
 plt.title('Joint Distribution of Height and Width')
 plt.xlabel('Width of image (in pixels)')
 plt.ylabel('Heigth of image (in pixels)')
-# TODO: plot in seaborn with hue by letter
 plt.show()
 
 # joint distribution of height, width with hue by letter
@@ -321,9 +321,9 @@ test_datagen = ImageDataGenerator(rescale=1.0/255.0)
 train_generator = train_datagen.flow_from_directory(
     train_red_dir,
     target_size=(150, 150),  # resizes all images
-    batch_size=20,
+    batch_size=1,
     class_mode='categorical',
-    color_mode='grayscale'
+    color_mode='grayscale',
 )
 
 validation_generator = val_datagen.flow_from_directory(
@@ -348,29 +348,58 @@ test_generator = test_datagen.flow_from_directory(
 # NETWORK
 #-----------------------------------------------------------------------------------------------------------------------
 
-model = models.Sequential()
+# defining the model building function
+def build_model(units1, optimizer, dropout=0, dense=0):
+    model = models.Sequential()
+    model.add(layers.Conv2D(units1, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
+    model.add(layers.MaxPooling2D(2, 2))
+    model.add(layers.Conv2D(units1*2, (3, 3), activation='relu', padding='same'))
+    model.add(layers.MaxPooling2D(2, 2))
+    model.add(layers.Conv2D(units1*4, (3, 3), activation='relu', padding='same'))
+    model.add(layers.MaxPooling2D(2, 2))
+    model.add(layers.Conv2D(units1*4, (3, 3), activation='relu', padding='same'))
+    model.add(layers.MaxPooling2D(2, 2))
+    model.add(layers.Flatten())  # vectorize to one dimensional representation
+    if dropout > 0:
+        model.add(layers.Dropout(dropout))
+    if dense == 1:
+        model.add(layers.Dense(units1*6, activation='relu'))
+    model.add(layers.Dense(24, activation='softmax'))
+    model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['acc'])
 
-# feature maps extracted: 100, filter: (3x3), slider: 1
-model.add(layers.Conv2D(30, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(60, (3, 3), activation='relu', padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(120, (3, 3), activation='relu', padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(120, (3, 3), activation='relu', padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Flatten())  # vectorize to one dimensional representation
-model.add(layers.Dense(24, activation='softmax'))
+    return model
 
-# model.summary()  # get as the shapes and number of params
+# the model will be like scikit-learn models so that it can be used in GridSearch
+model = KerasClassifier(build_fn=build_model)
 
-model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['acc'])
+# defining parameters for grid search
+parameters = {'units1': [16, 32],
+              'optimizer': ['adam', 'rmsprop'],
+              'dense': [0, 1],
+              'dropout': [0, 0.2, 0.5],
+              'steps_per_epoch': [1200],
+              'epochs': [15]}
+
+# getting the data out of train_generator
+data_list = []
+batch_index = 0
+while batch_index <= train_generator.batch_index:
+    data = train_generator.next()
+    data_list.append(data[0])
+    batch_index = batch_index + 1
+X_train = np.asarray(data_list)
+
+# GridSearch
+grid_search = GridSearchCV(estimator=model, param_grid=parameters, scoring='accuracy', cv=2, verbose=True, n_jobs=-1)
+history = grid_search.fit(X_train, train_generator.labels)
+best_parameters = grid_search.best_params_
+best_accuracy = grid_search.best_score_
 
 history = model.fit_generator(train_generator, steps_per_epoch=1200, epochs=5,
                               validation_data=validation_generator, validation_steps=240)
 
 # save the model
-id_num = input("Insert GridSearch ID number: ")
+id_num = input("Insert Model ID number: ")
 model.save_weights('model_weights{}.h5'.format(id_num))
 model.save('model_keras{}.h5'.format(id_num))
 
