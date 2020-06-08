@@ -11,10 +11,17 @@ from keras import layers
 from keras import models
 from keras.preprocessing.image import ImageDataGenerator
 import matplotlib.pyplot as plt
+import seaborn as sns
+import kaggle
 from tqdm import tqdm
 import numpy as np
 from sklearn.metrics import confusion_matrix
 import tarfile
+
+from numpy.random import seed
+from tensorflow import random as tfrandom
+seed(5)
+tfrandom.set_seed(5)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # LOADING THE DATA
@@ -209,31 +216,31 @@ img_df['area'] = img_df['height'] * img_df['width']
 img_df['aspect_ratio'] = img_df['width'] / img_df['height']
 
 # plotting the height distribution
-ax = img_df['height'].hist(bins=100)
-ax.set_title('Distribution of Images\' Heights')
-ax.set_xlabel('Height of image (in pixels)')
-ax.set_ylabel('Number of images')
+plt.hist(img_df['height'], bins=100, color='darkseagreen')
+plt.title('Distribution of Images\' Heights')
+plt.xlabel('Height of image (in pixels)')
+plt.ylabel('Number of images')
 plt.show()
 
 # plotting the width distribution
-ax = img_df['width'].hist(bins=100)
-ax.set_title('Distribution of Images\' Widths')
-ax.set_xlabel('Width of image (in pixels)')
-ax.set_ylabel('Number of images')
+plt.hist(img_df['width'], bins=100, color='darkseagreen')
+plt.title('Distribution of Images\' Widths')
+plt.xlabel('Width of image (in pixels)')
+plt.ylabel('Number of images')
 plt.show()
 
 # plotting the width distribution
-ax = img_df['area'].hist(bins=100)
-ax.set_title('Distribution of Images\' Areas')
-ax.set_xlabel('Area of image (in pixels)')
-ax.set_ylabel('Number of images')
+plt.hist(img_df['area'], bins=100, color='darkseagreen')
+plt.title('Distribution of Images\' Areas')
+plt.xlabel('Area of image (in pixels)')
+plt.ylabel('Number of images')
 plt.show()
 
 # plotting the aspect ration distribution
-ax = img_df['aspect_ratio'].hist(bins=100)
-ax.set_title('Distribution of Images\' Aspect Ratios')
-ax.set_xlabel('Aspect ratio of image')
-ax.set_ylabel('Number of images')
+plt.hist(img_df['aspect_ratio'], bins=100, color='darkseagreen')
+plt.title('Distribution of Images\' Aspect Ratios')
+plt.xlabel('Aspect ratio of image (in pixels)')
+plt.ylabel('Number of images')
 plt.show()
 
 # distribution of aspect ratio by handshape
@@ -248,11 +255,18 @@ size_desc = img_df.describe()
 # joint distribution of height, width
 img_df["width_height"] = img_df[["width" , "height"]].apply(lambda row: "_".join(row.values.astype(str)) , axis=1)
 img_df["counts_w_l"] = img_df["width_height"].map(img_df["width_height"].value_counts())
-x= img_df["width"]
-y= img_df["height"]
-z= img_df["counts_w_l"]
-plt.scatter(x, y, s=z*10, alpha=0.5, )
+plt.scatter(x=img_df["width"], y=img_df["height"], s=img_df["counts_w_l"]*10,  alpha=0.5, c='darkseagreen')
+plt.title('Joint Distribution of Height and Width')
+plt.xlabel('Width of image (in pixels)')
+plt.ylabel('Heigth of image (in pixels)')
 # TODO: plot in seaborn with hue by letter
+plt.show()
+
+# joint distribution of height, width with hue by letter
+sns.scatterplot(x=img_df["width"], y=img_df["height"], hue=img_df["handshape"], palette='muted')
+plt.title('Joint Distribution of Height and Width by Letter')
+plt.xlabel('Width of image (in pixels)')
+plt.ylabel('Heigth of image (in pixels)')
 plt.show()
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -307,7 +321,7 @@ test_datagen = ImageDataGenerator(rescale=1.0/255.0)
 train_generator = train_datagen.flow_from_directory(
     train_red_dir,
     target_size=(150, 150),  # resizes all images
-    batch_size=10,
+    batch_size=20,
     class_mode='categorical',
     color_mode='grayscale'
 )
@@ -315,7 +329,7 @@ train_generator = train_datagen.flow_from_directory(
 validation_generator = val_datagen.flow_from_directory(
     val_red_dir,
     target_size=(150, 150),  # resizes all images
-    batch_size=10,
+    batch_size=20,
     class_mode='categorical',
     color_mode='grayscale'
 )
@@ -323,7 +337,7 @@ validation_generator = val_datagen.flow_from_directory(
 test_generator = test_datagen.flow_from_directory(
     test_red_dir,
     target_size=(150, 150),  # resizes all images
-    batch_size=10,
+    batch_size=20,
     class_mode='categorical',
     color_mode='grayscale',
     shuffle=False
@@ -336,11 +350,14 @@ test_generator = test_datagen.flow_from_directory(
 
 model = models.Sequential()
 
-model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
+# feature maps extracted: 100, filter: (3x3), slider: 1
+model.add(layers.Conv2D(30, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='same'))
+model.add(layers.Conv2D(60, (3, 3), activation='relu', padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(128, (3, 3), activation='relu', padding='same'))
+model.add(layers.Conv2D(120, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(120, (3, 3), activation='relu', padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
 model.add(layers.Flatten())  # vectorize to one dimensional representation
 model.add(layers.Dense(24, activation='softmax'))
@@ -349,8 +366,8 @@ model.add(layers.Dense(24, activation='softmax'))
 
 model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['acc'])
 
-history = model.fit_generator(train_generator, steps_per_epoch=2400, epochs=15,
-                              validation_data=validation_generator, validation_steps=1200)
+history = model.fit_generator(train_generator, steps_per_epoch=1200, epochs=5,
+                              validation_data=validation_generator, validation_steps=240)
 
 # save the model
 id_num = input("Insert GridSearch ID number: ")
