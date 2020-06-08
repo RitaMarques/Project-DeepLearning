@@ -2,7 +2,7 @@
 # IMPORTING NEEDED PACKAGES
 #-----------------------------------------------------------------------------------------------------------------------
 
-import os , random
+import os, random
 import string
 import shutil
 import pandas as pd
@@ -11,7 +11,6 @@ from keras import layers
 from keras import models
 from keras.preprocessing.image import ImageDataGenerator
 import matplotlib.pyplot as plt
-import kaggle
 from tqdm import tqdm
 import numpy as np
 from sklearn.metrics import confusion_matrix
@@ -30,8 +29,8 @@ def createdir(mydir):
         pass
 
 # set basedir
-#basedir = r'C:\Users\TITA\Downloads\data'
-basedir = r'.\data'
+basedir = r'C:\Users\TITA\Downloads\data'
+#basedir = r'.\data'
 
 # define directories
 data1000 = (basedir + r"\data1000")
@@ -337,18 +336,13 @@ test_generator = test_datagen.flow_from_directory(
 
 model = models.Sequential()
 
-# feature maps extracted: 100, filter: (3x3), slider: 1
-model.add(layers.Conv2D(100, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
+model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(150, (3, 3), activation='relu', padding='same'))
+model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(300, (3, 3), activation='relu', padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(300, (3, 3), activation='relu', padding='same'))
+model.add(layers.Conv2D(128, (3, 3), activation='relu', padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
 model.add(layers.Flatten())  # vectorize to one dimensional representation
-#model.add(layers.Dropout(0.5))
-#model.add(layers.Dense(400, activation='relu'))
 model.add(layers.Dense(24, activation='softmax'))
 
 # model.summary()  # get as the shapes and number of params
@@ -356,22 +350,58 @@ model.add(layers.Dense(24, activation='softmax'))
 model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['acc'])
 
 history = model.fit_generator(train_generator, steps_per_epoch=2400, epochs=15,
-                              validation_data=validation_generator, validation_steps=50)
+                              validation_data=validation_generator, validation_steps=1200)
 
 # save the model
 id_num = input("Insert GridSearch ID number: ")
-model.save_weights('model2_weights{}.h5'.format(id_num))
-model.save('model2_keras{}.h5'.format(id_num))
+model.save_weights('model_weights{}.h5'.format(id_num))
+model.save('model_keras{}.h5'.format(id_num))
 
 # apply model to the test set
-preds = model.predict(test_datagen.flow_from_directory(test_red_dir, target_size=(150, 150), batch_size=50,
-                                                       class_mode='categorical', shuffle=False))
+preds = model.predict(test_generator)
 predicted_class_indices = np.argmax(preds, axis=1)
 test_labels = test_generator.labels
 
 cm = confusion_matrix(test_labels, predicted_class_indices)
-acc_test = model.evaluate_generator(test_generator)[1]
+test_score = model.evaluate_generator(test_generator)
 
+def plot_cm(confusion_matrix: np.array, classnames: list):
+    """
+    Function that creates a confusion matrix plot using the Wikipedia convention for the axis.
+    :param confusion_matrix: confusion matrix that will be plotted
+    :param classnames: labels of the classes"""
+
+    confusionmatrix = confusion_matrix
+    class_names = classnames
+
+    fig, ax = plt.subplots(figsize=(50, 50))
+    im = plt.imshow(confusionmatrix, cmap=plt.cm.cividis)
+    plt.colorbar()
+
+    # We want to show all ticks...
+    ax.set_xticks(np.arange(len(class_names)))
+    ax.set_yticks(np.arange(len(class_names)))
+    # ... and label them with the respective list entries
+    ax.set_xticklabels(class_names)
+    ax.set_yticklabels(class_names)
+
+    # Rotate the tick labels and set their alignment.
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+
+    # Loop over data dimensions and create text annotations.
+    for i in range(len(class_names)):
+        for j in range(len(class_names)):
+            text = ax.text(j, i, confusionmatrix[i, j],
+                           ha="center", va="center", color="w")
+
+    ax.set_title("Confusion Matrix")
+    plt.xlabel('Targets')
+    plt.ylabel('Predictions')
+    plt.ylim(top=len(class_names) - 0.5)  # adjust the top leaving bottom unchanged
+    plt.ylim(bottom=-0.5)  # adjust the bottom leaving top unchanged
+    return plt.show()
+
+plot_cm(cm, alphabet_lower)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # ANALYZING OVERFITTING
