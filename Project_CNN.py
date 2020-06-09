@@ -12,7 +12,7 @@ from keras import models
 from keras.preprocessing.image import ImageDataGenerator
 import matplotlib.pyplot as plt
 import seaborn as sns
-import kaggle
+#import kaggle
 from tqdm import tqdm
 import numpy as np
 from sklearn.metrics import confusion_matrix
@@ -21,6 +21,8 @@ from keras.wrappers.scikit_learn import KerasClassifier
 from numpy.random import seed
 from tensorflow import random as tfrandom
 from sklearn.model_selection import GridSearchCV
+from keras.callbacks import Callback
+import time
 seed(5)
 tfrandom.set_seed(5)
 
@@ -37,8 +39,8 @@ def createdir(mydir):
         pass
 
 # set basedir
-#basedir = r'C:\Users\TITA\Downloads\data'
-basedir = r'.\data'
+basedir = r'C:\Users\TITA\Downloads\data'
+#basedir = r'.\data'
 
 # define directories
 data1000 = (basedir + r"\data1000")
@@ -321,7 +323,7 @@ test_datagen = ImageDataGenerator(rescale=1.0/255.0)
 train_generator = train_datagen.flow_from_directory(
     train_red_dir,
     target_size=(150, 150),  # resizes all images
-    batch_size=1,
+    batch_size=20,
     class_mode='categorical',
     color_mode='grayscale',
 )
@@ -343,9 +345,178 @@ test_generator = test_datagen.flow_from_directory(
     shuffle=False
 )
 
-
 #-----------------------------------------------------------------------------------------------------------------------
 # NETWORK
+#-----------------------------------------------------------------------------------------------------------------------
+
+model = models.Sequential()
+
+# model 22: acc: 0.9911, val_acc: 0.9869, test_acc: 0.9906
+model.add(layers.Conv2D(16, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(32, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(128, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Flatten())
+model.add(layers.Dropout(0.5))
+model.add(layers.Dense(256, activation='relu'))
+model.add(layers.Dense(24, activation='softmax'))
+
+# model 23: acc: 0.9808, val_acc: 0.9871, test_acc: 0.9867
+model.add(layers.Conv2D(16, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(32, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Flatten()) 
+model.add(layers.Dropout(0.5))
+model.add(layers.Dense(64, activation='relu'))
+model.add(layers.Dense(24, activation='softmax'))
+
+# model 24: acc: 0.9912, val_acc: 0.9827, test_acc: 0.9835
+model.add(layers.Conv2D(16, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(32, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(128, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Flatten())
+model.add(layers.Dropout(0.5))
+model.add(layers.Dense(128, activation='relu'))
+model.add(layers.Dense(24, activation='softmax'))
+
+model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['acc'])
+
+# callback to save the running time in each epoch
+class TimeHistory(Callback):
+    def on_train_begin(self, logs={}):
+        self.times = []
+
+    def on_epoch_begin(self, batch, logs={}):
+        self.epoch_time_start = time.time()
+
+    def on_epoch_end(self, batch, logs={}):
+        self.times.append(time.time() - self.epoch_time_start)
+
+time_callback = TimeHistory()
+history22 = model.fit_generator(train_generator, steps_per_epoch=1200, epochs=15,
+                              validation_data=validation_generator, validation_steps=240,
+                              callbacks=[time_callback])
+history23 = model.fit_generator(train_generator, steps_per_epoch=1200, epochs=15,
+                              validation_data=validation_generator, validation_steps=240,
+                              callbacks=[time_callback])
+history24 = model.fit_generator(train_generator, steps_per_epoch=1200, epochs=15,
+                              validation_data=validation_generator, validation_steps=240,
+                              callbacks=[time_callback])
+
+times22 = time_callback.times
+times23 = time_callback.times
+times24 = time_callback.times
+
+# save the model
+id_num = input("Insert Model ID number: ")
+model.save_weights('model_weights{}.h5'.format(id_num))
+model.save('model_keras{}.h5'.format(id_num))
+
+# apply model to the test set
+preds = model.predict(test_generator)
+predicted_class_indices = np.argmax(preds, axis=1)
+test_labels = test_generator.labels
+
+cm = confusion_matrix(test_labels, predicted_class_indices)
+test_score22 = model.evaluate_generator(test_generator)
+test_score23 = model.evaluate_generator(test_generator)
+test_score24 = model.evaluate_generator(test_generator)
+
+#-----------------------------------------------------------------------------------------------------------------------
+# ANALYZING RESULTS
+#-----------------------------------------------------------------------------------------------------------------------
+
+# confusion matrix plot
+def plot_cm(confusion_matrix: np.array, classnames: list):
+    """
+    Function that creates a confusion matrix plot using the Wikipedia convention for the axis.
+    :param confusion_matrix: confusion matrix that will be plotted
+    :param classnames: labels of the classes"""
+
+    confusionmatrix = confusion_matrix
+    class_names = classnames
+
+    fig, ax = plt.subplots(figsize=(50, 50))
+    im = plt.imshow(confusionmatrix, cmap=plt.cm.cividis)
+    plt.colorbar()
+
+    # We want to show all ticks...
+    ax.set_xticks(np.arange(len(class_names)))
+    ax.set_yticks(np.arange(len(class_names)))
+    # ... and label them with the respective list entries
+    ax.set_xticklabels(class_names)
+    ax.set_yticklabels(class_names)
+
+    # Rotate the tick labels and set their alignment.
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+
+    # Loop over data dimensions and create text annotations.
+    for i in range(len(class_names)):
+        for j in range(len(class_names)):
+            text = ax.text(j, i, confusionmatrix[i, j],
+                           ha="center", va="center", color="w")
+
+    ax.set_title("Confusion Matrix")
+    plt.xlabel('Targets')
+    plt.ylabel('Predictions')
+    plt.ylim(top=len(class_names) - 0.5)  # adjust the top leaving bottom unchanged
+    plt.ylim(bottom=-0.5)  # adjust the bottom leaving top unchanged
+    return plt.show()
+plot_cm(cm, alphabet_lower)
+
+# training time single evolution plot
+sns.lineplot(x=list(range(1, 16)), y=times23)
+plt.title('Training Time')
+plt.xlabel('Epochs')
+plt.ylabel('Time in secs')
+plt.show()
+
+# models comparison time plot
+epochs = list(range(1, 16))
+plt.plot(epochs, times22, label='Model 1', colormap='Accent')
+plt.plot(epochs, times23, label='Model 2', colormap='Accent')
+plt.plot(epochs, times24, label='Model 3', colormap='Accent')
+plt.title('Training Time')
+plt.xlabel('Epochs')
+plt.ylabel('Time in secs')
+plt.legend()
+plt.show()
+
+# best models accuracy comparison
+model1_22_13_train = {'Train Acc': history22.history.get('acc')[-1], 'Val Acc': history22.history.get('val_acc')[-1],
+                      'Test Acc': test_score22[1]}
+model2_23_14_train = {'Train Acc': history23.history.get('acc')[-1], 'Val Acc': history23.history.get('val_acc')[-1],
+                      'Test Acc': 0.99}
+model3_24_15_train = {'Train Acc': history24.history.get('acc')[-1], 'Val Acc': history24.history.get('val_acc')[-1],
+                      'Test Acc': test_score24[1]}
+
+df_best_models = pd.DataFrame(columns=['Train Acc', 'Val Acc', 'Test Acc'], index=['Model 1', 'Model 2', 'Model 3'])
+df_best_models.loc['Model 1'] = model1_22_13_train
+df_best_models.loc['Model 2'] = model2_23_14_train
+df_best_models.loc['Model 3'] = model3_24_15_train
+df_best_models = df_best_models.transpose()
+
+# best models accuracy comparison plot
+df_best_models.plot.bar(rot=0, colormap='Accent')
+plt.ylim(0.97, 1)
+plt.show()
+
+#-----------------------------------------------------------------------------------------------------------------------
+# GRID SEARCH
 #-----------------------------------------------------------------------------------------------------------------------
 
 # defining the model building function
@@ -395,75 +566,21 @@ history = grid_search.fit(X_train, train_generator.labels)
 best_parameters = grid_search.best_params_
 best_accuracy = grid_search.best_score_
 
-history = model.fit_generator(train_generator, steps_per_epoch=1200, epochs=5,
-                              validation_data=validation_generator, validation_steps=240)
-
-# save the model
-id_num = input("Insert Model ID number: ")
-model.save_weights('model_weights{}.h5'.format(id_num))
-model.save('model_keras{}.h5'.format(id_num))
-
-# apply model to the test set
-preds = model.predict(test_generator)
-predicted_class_indices = np.argmax(preds, axis=1)
-test_labels = test_generator.labels
-
-cm = confusion_matrix(test_labels, predicted_class_indices)
-test_score = model.evaluate_generator(test_generator)
-
-def plot_cm(confusion_matrix: np.array, classnames: list):
-    """
-    Function that creates a confusion matrix plot using the Wikipedia convention for the axis.
-    :param confusion_matrix: confusion matrix that will be plotted
-    :param classnames: labels of the classes"""
-
-    confusionmatrix = confusion_matrix
-    class_names = classnames
-
-    fig, ax = plt.subplots(figsize=(50, 50))
-    im = plt.imshow(confusionmatrix, cmap=plt.cm.cividis)
-    plt.colorbar()
-
-    # We want to show all ticks...
-    ax.set_xticks(np.arange(len(class_names)))
-    ax.set_yticks(np.arange(len(class_names)))
-    # ... and label them with the respective list entries
-    ax.set_xticklabels(class_names)
-    ax.set_yticklabels(class_names)
-
-    # Rotate the tick labels and set their alignment.
-    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
-
-    # Loop over data dimensions and create text annotations.
-    for i in range(len(class_names)):
-        for j in range(len(class_names)):
-            text = ax.text(j, i, confusionmatrix[i, j],
-                           ha="center", va="center", color="w")
-
-    ax.set_title("Confusion Matrix")
-    plt.xlabel('Targets')
-    plt.ylabel('Predictions')
-    plt.ylim(top=len(class_names) - 0.5)  # adjust the top leaving bottom unchanged
-    plt.ylim(bottom=-0.5)  # adjust the bottom leaving top unchanged
-    return plt.show()
-
-plot_cm(cm, alphabet_lower)
-
 #-----------------------------------------------------------------------------------------------------------------------
 # ANALYZING OVERFITTING
 #-----------------------------------------------------------------------------------------------------------------------
 
 # DISPLAYING CURVES OF LOSS AND ACCURACY DURING TRAINING
-acc = history.history['acc']
-val_acc = history.history['val_acc']
+acc = history23.history['acc']
+val_acc = history23.history['val_acc']
 
-loss = history.history['loss']
-val_loss = history.history['val_loss']
+loss = history23.history['loss']
+val_loss = history23.history['val_loss']
 
 epochs = range(1, len(loss) + 1)
 
-plt.plot(epochs, acc, 'bo', label='Training acc')
-plt.plot(epochs, val_acc, 'b', label='Validation acc')
+plt.plot(epochs, acc, 'bo', label='Training acc', color='darkseagreen')
+plt.plot(epochs, val_acc, 'b', label='Validation acc', color='darkseagreen')
 plt.title('Training and Validation Accuracy')
 plt.xlabel('Epochs')
 plt.ylabel('Accuracy')
@@ -471,8 +588,8 @@ plt.legend()
 
 plt.figure()
 
-plt.plot(epochs, loss, 'bo', label='Training loss')
-plt.plot(epochs, val_loss, 'b', label='Validation loss')
+plt.plot(epochs, loss, 'bo', label='Training loss', color='darkseagreen')
+plt.plot(epochs, val_loss, 'b', label='Validation loss', color='darkseagreen')
 plt.title('Training and Validation Loss')
 plt.xlabel('Epochs')
 plt.ylabel('Loss')
