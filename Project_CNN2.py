@@ -365,34 +365,6 @@ model.add(layers.Dropout(0.5))
 model.add(layers.Dense(256, activation='relu'))
 model.add(layers.Dense(24, activation='softmax'))
 
-# model 23: acc: 0.9808, val_acc: 0.9871, test_acc: 0.9867
-model.add(layers.Conv2D(16, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(32, (3, 3), activation='relu', padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Flatten()) 
-model.add(layers.Dropout(0.5))
-model.add(layers.Dense(64, activation='relu'))
-model.add(layers.Dense(24, activation='softmax'))
-
-# model 24: acc: 0.9912, val_acc: 0.9827, test_acc: 0.9835
-model.add(layers.Conv2D(16, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(32, (3, 3), activation='relu', padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(128, (3, 3), activation='relu', padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Flatten())
-model.add(layers.Dropout(0.5))
-model.add(layers.Dense(128, activation='relu'))
-model.add(layers.Dense(24, activation='softmax'))
-
 model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['acc'])
 
 # callback to save the running time in each epoch
@@ -407,21 +379,11 @@ class TimeHistory(Callback):
         self.times.append(time.time() - self.epoch_time_start)
 
 time_callback = TimeHistory()
-history22 = model.fit_generator(train_generator, steps_per_epoch=1200, epochs=15,
-                              validation_data=validation_generator, validation_steps=240,
-                              callbacks=[time_callback])
-history23 = model.fit_generator(train_generator, steps_per_epoch=1200, epochs=15,
-                              validation_data=validation_generator, validation_steps=240,
-                              callbacks=[time_callback])
-history24 = model.fit_generator(train_generator, steps_per_epoch=1200, epochs=15,
+history = model.fit_generator(train_generator, steps_per_epoch=1200, epochs=15,
                               validation_data=validation_generator, validation_steps=240,
                               callbacks=[time_callback])
 
-times22 = time_callback.times
-times23 = time_callback.times
-times24 = time_callback.times
-
-
+times = time_callback.times
 
 # apply model to the test set
 preds = model.predict(test_generator)
@@ -429,9 +391,7 @@ predicted_class_indices = np.argmax(preds, axis=1)
 test_labels = test_generator.labels
 
 cm = confusion_matrix(test_labels, predicted_class_indices)
-test_score22 = model.evaluate_generator(test_generator)
-test_score23 = model.evaluate_generator(test_generator)
-test_score24 = model.evaluate_generator(test_generator)
+test_score = model.evaluate_generator(test_generator)
 
 def save_acc_times(model, history, times, test_score):
     # save the model
@@ -446,6 +406,8 @@ def save_acc_times(model, history, times, test_score):
 
     df_save_acc.to_csv(r'.\outputs\models_acc.csv')
     df_save_times.to_csv(r'.\outputs\models_times.csv')
+
+save_acc_times(model, history, times, test_score)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # ANALYZING RESULTS
