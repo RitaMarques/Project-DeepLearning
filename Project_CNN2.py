@@ -552,42 +552,18 @@ grid_integration(histories, times, test_acc)
 # -----------------------------------------------------------------------------------------------------------------------
 
 # confusion matrix plot
-def plot_cm(confusion_matrix: np.array, classnames: list):
-    """
-    Function that creates a confusion matrix plot using the Wikipedia convention for the axis.
-    :param confusion_matrix: confusion matrix that will be plotted
-    :param classnames: labels of the classes"""
+def cm_map(cm):
+    plt.figure(figsize=(10, 10))
 
-    confusionmatrix = confusion_matrix
-    class_names = classnames
+    cm_plot = pd.DataFrame(cm, columns=alphabet_lower, index=alphabet_lower)
 
-    fig, ax = plt.subplots(figsize=(50, 50))
-    im = plt.imshow(confusionmatrix, cmap=plt.cm.cividis)
-    plt.colorbar()
+    mask_annot = np.absolute(cm_plot.values) >= 1
+    annot1 = np.where(mask_annot, cm_plot.values, np.full((cm.shape[0], cm.shape[0]), ""))
 
-    # We want to show all ticks...
-    ax.set_xticks(np.arange(len(class_names)))
-    ax.set_yticks(np.arange(len(class_names)))
-    # ... and label them with the respective list entries
-    ax.set_xticklabels(class_names)
-    ax.set_yticklabels(class_names)
+    sns.heatmap(data=cm_plot, annot=annot1, cmap='Greens', fmt='s')
+    plt.show()
 
-    # Rotate the tick labels and set their alignment.
-    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
-
-    # Loop over data dimensions and create text annotations.
-    for i in range(len(class_names)):
-        for j in range(len(class_names)):
-            text = ax.text(j, i, confusionmatrix[i, j],
-                           ha="center", va="center", color="w")
-
-    ax.set_title("Confusion Matrix")
-    plt.xlabel('Targets')
-    plt.ylabel('Predictions')
-    plt.ylim(top=len(class_names) - 0.5)  # adjust the top leaving bottom unchanged
-    plt.ylim(bottom=-0.5)  # adjust the bottom leaving top unchanged
-    return plt.show()
-plot_cm(cm, alphabet_lower)
+cm_map(cm)
 
 
 # import csv with all accuracies and times
@@ -668,36 +644,62 @@ best_models_comparison(df_acc, df_times, num_models=5)
 
 
 
-# # PLOT PARAMETERS COMPARISION WITH TRAINING TIME
-# import matplotlib.patches as mpatches
-#
-# df_params_time = pd.read_csv(r'.\outputs\params_times.csv', sep=';')
-#
-#
-# fig, ax = plt.subplots()
-#
-# groups = df_params_time.groupby('Filters 1')
-# markers = ['x', 'o']
-# colors = {0.0: 'gray', 0.2: 'royalblue', 0.5: 'darkseagreen'}
-#
-# for (name, group), marker in zip(groups, markers):
-#     ax.scatter(group['Neurons Dense'], group['total_time'], marker=marker, label=name,
-#                c=group['Dropout Layer'].apply(lambda x: colors[x]))
-#     ax.legend()
-#
-# plt.xlabel('Number of Dense Neurons')
-# plt.ylabel('Training Time')
-# plt.title("Training Time Relationship with the Layers' Parameters")
-# plt.box(True)
-# plt.rcParams['axes.spines.right'] = False
-# plt.rcParams['axes.spines.top'] = False
-# plt.rcParams['axes.spines.left'] = True
-# plt.rcParams['axes.spines.bottom'] = True
-# gray_patch = mpatches.Patch(color='gray', label='Dropout 0')
-# blue_patch = mpatches.Patch(color='royalblue', label='Dropout 0.2')
-# green_patch = mpatches.Patch(color='darkseagreen', label='Dropout 0.5')
-# plt.legend(handles=[gray_patch, blue_patch, green_patch], loc='center right')
-# plt.show()
+# PLOT PARAMETERS COMPARISION WITH TRAINING TIME
+import matplotlib.patches as mpatches
+
+df_params_time = pd.read_csv(r'.\outputs\params_times.csv', sep=';')
+
+fig, ax = plt.subplots()
+
+groups = df_params_time.groupby('Filters 1')
+markers = ['x', 'o']
+colors = {0.0: 'gray', 0.2: 'royalblue', 0.5: 'darkseagreen'}
+
+for (name, group), marker in zip(groups, markers):
+    ax.scatter(group['Neurons Dense'], group['total_time'], marker=marker, label=name,
+               c=group['Dropout Layer'].apply(lambda x: colors[x]))
+    ax.legend()
+
+plt.xlabel('Number of Dense Neurons')
+plt.ylabel('Training Time')
+plt.title("Training Time Relationship with the Layers' Parameters")
+plt.box(True)
+plt.rcParams['axes.spines.right'] = False
+plt.rcParams['axes.spines.top'] = False
+plt.rcParams['axes.spines.left'] = True
+plt.rcParams['axes.spines.bottom'] = True
+gray_patch = mpatches.Patch(color='gray', label='Dropout 0')
+blue_patch = mpatches.Patch(color='royalblue', label='Dropout 0.2')
+green_patch = mpatches.Patch(color='darkseagreen', label='Dropout 0.5')
+plt.legend(handles=[gray_patch, blue_patch, green_patch], loc='center right')
+plt.show()
+
+# training time relationship with number of parameters
+fig, ax = plt.subplots()
+
+groups = df_params_time.groupby('Filters 1')
+markers = ['x', 'o']
+colors = {0.0: 'gray', 64: 'black', 128: 'royalblue', 256: 'darkseagreen'}
+
+for (name, group), marker in zip(groups, markers):
+    ax.scatter(group['Parameters'], group['total_time'], marker=marker, label=name,
+               c=group['Neurons Dense'].apply(lambda x: colors[x]))
+    ax.legend()
+
+plt.xlabel('Number of Parameters')
+plt.ylabel('Training Time')
+plt.title("Training Time Relationship with the Layers' Parameters")
+plt.box(True)
+plt.rcParams['axes.spines.right'] = False
+plt.rcParams['axes.spines.top'] = False
+plt.rcParams['axes.spines.left'] = True
+plt.rcParams['axes.spines.bottom'] = True
+gray_patch = mpatches.Patch(color='gray', label='Dense 0')
+black_patch = mpatches.Patch(color='black', label='Dense 64')
+blue_patch = mpatches.Patch(color='royalblue', label='Dense 128')
+green_patch = mpatches.Patch(color='darkseagreen', label='Dense 256')
+plt.legend(handles=[gray_patch, black_patch, blue_patch, green_patch], loc='center right')
+plt.show()
 
 
 #-----------------------------------------------------------------------------------------------------------------------
