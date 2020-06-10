@@ -55,7 +55,7 @@ val_red_dir = (basedir + r'\red\val_red')
 test_red_dir = (basedir + r'\red\test_red')
 outputs_dir = r'.\outputs'
 
-#create all the directories
+# create all the directories
 createdir(r'data')
 createdir(data1000)
 createdir(train_dir)
@@ -237,7 +237,6 @@ plt.show()
 # descriptive statistics for size
 size_desc = img_df.describe()
 
-
 # joint distribution of height, width
 img_df["width_height"] = img_df[["width" , "height"]].apply(lambda row: "_".join(row.values.astype(str)) , axis=1)
 img_df["counts_w_l"] = img_df["width_height"].map(img_df["width_height"].value_counts())
@@ -247,7 +246,7 @@ plt.xlabel('Width of image (in pixels)')
 plt.ylabel('Heigth of image (in pixels)')
 plt.show()
 
-# joint distribution of height, width with hue by letter
+# joint distribution of height and width by letter
 sns.scatterplot(x=img_df["width"], y=img_df["height"], hue=img_df["handshape"], palette='muted')
 plt.title('Joint Distribution of Height and Width by Letter')
 plt.xlabel('Width of image (in pixels)')
@@ -433,6 +432,7 @@ preds = model.predict(test_generator)
 predicted_class_indices = np.argmax(preds, axis=1)
 test_labels = test_generator.labels
 
+# get test metrics
 cm = confusion_matrix(test_labels, predicted_class_indices)
 test_score = model.evaluate_generator(test_generator)
 
@@ -482,7 +482,7 @@ def build_model(units1, optimizer, dropout=0, dense=0):
     model.add(layers.MaxPooling2D(2, 2))
     model.add(layers.Conv2D(units1*4, (3, 3), activation='relu', padding='same'))
     model.add(layers.MaxPooling2D(2, 2))
-    model.add(layers.Flatten())  # vectorize to one dimensional representation
+    model.add(layers.Flatten())
     if dropout > 0:
         model.add(layers.Dropout(dropout))
     if dense == 1:
@@ -517,49 +517,6 @@ for parameter, model_id in zip(parameters, range(0, len(parameters))):
     times["Model {0}".format(model_id)] = time_callback.times
 
 
-# -----------------------------------------------------------------------------------------------------------------------
-# ANALYZING RESULTS
-# -----------------------------------------------------------------------------------------------------------------------
-
-# confusion matrix plot
-def plot_cm(confusion_matrix: np.array, classnames: list):
-    """
-    Function that creates a confusion matrix plot using the Wikipedia convention for the axis.
-    :param confusion_matrix: confusion matrix that will be plotted
-    :param classnames: labels of the classes"""
-
-    confusionmatrix = confusion_matrix
-    class_names = classnames
-
-    fig, ax = plt.subplots(figsize=(50, 50))
-    im = plt.imshow(confusionmatrix, cmap=plt.cm.cividis)
-    plt.colorbar()
-
-    # We want to show all ticks...
-    ax.set_xticks(np.arange(len(class_names)))
-    ax.set_yticks(np.arange(len(class_names)))
-    # ... and label them with the respective list entries
-    ax.set_xticklabels(class_names)
-    ax.set_yticklabels(class_names)
-
-    # Rotate the tick labels and set their alignment.
-    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
-
-    # Loop over data dimensions and create text annotations.
-    for i in range(len(class_names)):
-        for j in range(len(class_names)):
-            text = ax.text(j, i, confusionmatrix[i, j],
-                           ha="center", va="center", color="w")
-
-    ax.set_title("Confusion Matrix")
-    plt.xlabel('Targets')
-    plt.ylabel('Predictions')
-    plt.ylim(top=len(class_names) - 0.5)  # adjust the top leaving bottom unchanged
-    plt.ylim(bottom=-0.5)  # adjust the bottom leaving top unchanged
-    return plt.show()
-plot_cm(cm, alphabet_lower)
-
-
 def grid_integration(histories, times, test_acc):
     '''Function that takes the outputs of the grid search and export them to csv'''
 
@@ -590,6 +547,24 @@ def grid_integration(histories, times, test_acc):
 
 grid_integration(histories, times, test_acc)
 
+# -----------------------------------------------------------------------------------------------------------------------
+# ANALYZING RESULTS
+# -----------------------------------------------------------------------------------------------------------------------
+
+# confusion matrix plot
+def cm_map(cm):
+    plt.figure(figsize=(10, 10))
+
+    cm_plot = pd.DataFrame(cm, columns=alphabet_lower, index=alphabet_lower)
+
+    mask_annot = np.absolute(cm_plot.values) >= 1
+    annot1 = np.where(mask_annot, cm_plot.values, np.full((cm.shape[0], cm.shape[0]), ""))
+
+    sns.heatmap(data=cm_plot, annot=annot1, cmap='Greens', fmt='s')
+    plt.show()
+
+cm_map(cm)
+
 
 # import csv with all accuracies and times
 df_acc = pd.read_csv(r'.\outputs\models_acc.csv')
@@ -598,13 +573,13 @@ df_acc.set_index('Model', inplace=True, drop=True)
 df_times.set_index('Model', inplace=True, drop=True)
 
 def comparison_plots(df_times, df_acc):
-    '''Function that takes the accuracies dataframe and training times dataframe of the models we want to compare and
-    plots the differences'''
+    '''Function that takes the accuracies dataframe and training times dataframe of the selected models
+    and plots the differences'''
 
     df_time_plot = df_times.copy()
     df_acc_plot = df_acc.copy()
 
-    df_time_plot = df_time_plot * 0.0166666667  # transform from seconds to minutes
+    df_time_plot = df_time_plot / 60  # from seconds to minutes transformation
 
     # time plot
     df_time_plot = df_time_plot.transpose()
@@ -612,7 +587,7 @@ def comparison_plots(df_times, df_acc):
     plt.title('Training Time')
     plt.xlabel('Epochs')
     plt.ylabel('Time (in minutes)')
-    plt.legend(bbox_to_anchor=(1.01,0.5), loc="center left")
+    plt.legend(bbox_to_anchor=(1.01, 0.5), loc="center left")
     plt.show()
 
     # accuracy plot
@@ -620,19 +595,23 @@ def comparison_plots(df_times, df_acc):
     df_acc_plot.plot.bar(rot=0, colormap='tab20')
     plt.ylim(0.95, 1)
     plt.ylabel('Accuracy')
-    plt.legend(bbox_to_anchor=(1.01,0.5), loc="center left")
+    plt.legend(bbox_to_anchor=(1.01, 0.5), loc="center left")
     plt.title("Models' Accuracies Comparison")
     plt.show()
 
 comparison_plots(df_times, df_acc)
 
 def test_comparison (df_acc):
+    '''Function that plots the test and validation accuracies of the models to check the differences'''
     df_acc_plot = df_acc.copy()
+
+    # sort df by Test Acc to get a better visualization
     df_acc_plot = df_acc_plot[['Test Acc', 'Val Acc']].sort_values('Test Acc', ascending=False).transpose()
+
     df_acc_plot.plot.bar(rot=0, colormap='tab20')
     plt.ylim(0.95, 1)
     plt.ylabel('Accuracy')
-    plt.legend(bbox_to_anchor=(1.01,0.5), loc="center left")
+    plt.legend(bbox_to_anchor=(1.01, 0.5), loc="center left")
     plt.title("Models' Accuracies Comparison")
     plt.box(True)
     plt.rcParams['axes.spines.right'] = False
@@ -644,15 +623,83 @@ def test_comparison (df_acc):
 test_comparison(df_acc)
 
 def best_models_comparison(df_acc, df_times, num_models=5):
+    '''Function that plots the test and validation accuracies of the best models to check the differences'''
+
     df_acc_plot = df_acc.copy()
+
+    # sort df by Test Acc to get a better visualization
     df_acc_plot = df_acc_plot[['Test Acc', 'Val Acc']].sort_values('Test Acc', ascending=False)
+
+    # get indexes names of the best models
     best_models = list(df_acc_plot.index.values[0:num_models])
+
+    # get the correct dataframes
     df_acc_plot = df_acc_plot.iloc[0:5]
     df_times_plot = df_times.copy().loc[best_models]
 
+    # get the plot with the current dataframes
     comparison_plots(df_times_plot, df_acc_plot)
 
 best_models_comparison(df_acc, df_times, num_models=5)
+
+
+
+# PLOT PARAMETERS COMPARISION WITH TRAINING TIME
+import matplotlib.patches as mpatches
+
+df_params_time = pd.read_csv(r'.\outputs\params_times.csv', sep=';')
+
+fig, ax = plt.subplots()
+
+groups = df_params_time.groupby('Filters 1')
+markers = ['x', 'o']
+colors = {0.0: 'gray', 0.2: 'royalblue', 0.5: 'darkseagreen'}
+
+for (name, group), marker in zip(groups, markers):
+    ax.scatter(group['Neurons Dense'], group['total_time'], marker=marker, label=name,
+               c=group['Dropout Layer'].apply(lambda x: colors[x]))
+    ax.legend()
+
+plt.xlabel('Number of Dense Neurons')
+plt.ylabel('Training Time')
+plt.title("Training Time Relationship with the Layers' Parameters")
+plt.box(True)
+plt.rcParams['axes.spines.right'] = False
+plt.rcParams['axes.spines.top'] = False
+plt.rcParams['axes.spines.left'] = True
+plt.rcParams['axes.spines.bottom'] = True
+gray_patch = mpatches.Patch(color='gray', label='Dropout 0')
+blue_patch = mpatches.Patch(color='royalblue', label='Dropout 0.2')
+green_patch = mpatches.Patch(color='darkseagreen', label='Dropout 0.5')
+plt.legend(handles=[gray_patch, blue_patch, green_patch], loc='center right')
+plt.show()
+
+# training time relationship with number of parameters
+fig, ax = plt.subplots()
+
+groups = df_params_time.groupby('Filters 1')
+markers = ['x', 'o']
+colors = {0.0: 'gray', 64: 'black', 128: 'royalblue', 256: 'darkseagreen'}
+
+for (name, group), marker in zip(groups, markers):
+    ax.scatter(group['Parameters'], group['total_time'], marker=marker, label=name,
+               c=group['Neurons Dense'].apply(lambda x: colors[x]))
+    ax.legend()
+
+plt.xlabel('Number of Parameters')
+plt.ylabel('Training Time')
+plt.title("Training Time Relationship with the Layers' Parameters")
+plt.box(True)
+plt.rcParams['axes.spines.right'] = False
+plt.rcParams['axes.spines.top'] = False
+plt.rcParams['axes.spines.left'] = True
+plt.rcParams['axes.spines.bottom'] = True
+gray_patch = mpatches.Patch(color='gray', label='Dense 0')
+black_patch = mpatches.Patch(color='black', label='Dense 64')
+blue_patch = mpatches.Patch(color='royalblue', label='Dense 128')
+green_patch = mpatches.Patch(color='darkseagreen', label='Dense 256')
+plt.legend(handles=[gray_patch, black_patch, blue_patch, green_patch], loc='center right')
+plt.show()
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -662,13 +709,15 @@ best_models_comparison(df_acc, df_times, num_models=5)
 filename = 'model_kerasBest Model 1.h5'
 best_model_1 = load_model(outputs_dir + r"/" + filename)
 model = load_model(outputs_dir + r"/" + filename)
-model.summary()
-# dá jeito para vermos o número de parametros a treinar no modelo
-plot_model(model, to_file=(outputs_dir + "/{}.png".format(str(filename).split(".")[0])), show_shapes=True, show_layer_names=True)
+model.summary() # number of trained parametrs
+
+# structure model plot
+plot_model(model, to_file=(outputs_dir + "/{}.png".format(str(filename).split(".")[0])),
+           show_shapes=True, show_layer_names=True)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
-# ANALYZING OVERFITTING
+# ANALYZING TRAINING ACCURACY AND LOSS EVOLUTION OVER EPOCHS
 #-----------------------------------------------------------------------------------------------------------------------
 
 log_data = pd.read_csv(outputs_dir + r'\training.log', sep=',', engine='python')
@@ -708,3 +757,5 @@ plt.xlabel('Epochs')
 plt.ylabel('Loss')
 plt.legend()
 plt.show()
+
+
