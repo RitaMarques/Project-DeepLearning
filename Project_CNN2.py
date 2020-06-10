@@ -603,7 +603,7 @@ def comparison_plots(df_times, df_acc):
     df_time_plot = df_times.copy()
     df_acc_plot = df_acc.copy()
 
-    df_time_plot = df_time_plot * 0.0166666667  # from seconds to minutes transformation
+    df_time_plot = df_time_plot / 60  # from seconds to minutes transformation
 
     # time plot
     df_time_plot = df_time_plot.transpose()
@@ -667,6 +667,39 @@ def best_models_comparison(df_acc, df_times, num_models=5):
 best_models_comparison(df_acc, df_times, num_models=5)
 
 
+
+# # PLOT PARAMETERS COMPARISION WITH TRAINING TIME
+# import matplotlib.patches as mpatches
+#
+# df_params_time = pd.read_csv(r'.\outputs\params_times.csv', sep=';')
+#
+#
+# fig, ax = plt.subplots()
+#
+# groups = df_params_time.groupby('Filters 1')
+# markers = ['x', 'o']
+# colors = {0.0: 'gray', 0.2: 'royalblue', 0.5: 'darkseagreen'}
+#
+# for (name, group), marker in zip(groups, markers):
+#     ax.scatter(group['Neurons Dense'], group['total_time'], marker=marker, label=name,
+#                c=group['Dropout Layer'].apply(lambda x: colors[x]))
+#     ax.legend()
+#
+# plt.xlabel('Number of Dense Neurons')
+# plt.ylabel('Training Time')
+# plt.title("Training Time Relationship with the Layers' Parameters")
+# plt.box(True)
+# plt.rcParams['axes.spines.right'] = False
+# plt.rcParams['axes.spines.top'] = False
+# plt.rcParams['axes.spines.left'] = True
+# plt.rcParams['axes.spines.bottom'] = True
+# gray_patch = mpatches.Patch(color='gray', label='Dropout 0')
+# blue_patch = mpatches.Patch(color='royalblue', label='Dropout 0.2')
+# green_patch = mpatches.Patch(color='darkseagreen', label='Dropout 0.5')
+# plt.legend(handles=[gray_patch, blue_patch, green_patch], loc='center right')
+# plt.show()
+
+
 #-----------------------------------------------------------------------------------------------------------------------
 # BEST MODELS
 #-----------------------------------------------------------------------------------------------------------------------
@@ -722,3 +755,5 @@ plt.xlabel('Epochs')
 plt.ylabel('Loss')
 plt.legend()
 plt.show()
+
+
