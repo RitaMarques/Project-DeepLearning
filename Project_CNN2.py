@@ -410,13 +410,14 @@ def save_acc_times(model, history, times, test_score):
         times_dict[idx] = times[idx]
     df_save_times = pd.DataFrame(times_dict)
 
+
     if os.path.exists(r'.\outputs\models_acc.csv'):
-        df_save_acc.to_csv(r'.\outputs\models_acc.csv', df_save_acc, mode='a', header=False, index=False)
+        df_save_acc.to_csv(r'.\outputs\models_acc.csv', mode='a', header=False, index=False)
     else:
         df_save_acc.to_csv(r'.\outputs\models_acc.csv')
 
     if os.path.exists(r'.\outputs\models_times.csv'):
-        df_save_times.to_csv(r'.\outputs\models_times.csv', df_save_times, mode='a', header=False, index=False)
+        df_save_times.to_csv(r'.\outputs\models_times.csv', mode='a', header=False, index=False)
     else:
         df_save_times.to_csv(r'.\outputs\models_times.csv')
 
