@@ -328,8 +328,79 @@ test_generator = test_datagen.flow_from_directory(
     shuffle=False
 )
 
+
+train_generator_notred = train_datagen.flow_from_directory(
+    train_dir,
+    target_size=(150, 150),  # resizes all images
+    batch_size=20,
+    class_mode='categorical',
+    color_mode='rgb',
+)
+
+validation_generator_notred = val_datagen.flow_from_directory(
+    val_dir,
+    target_size=(150, 150),  # resizes all images
+    batch_size=20,
+    class_mode='categorical',
+    color_mode='rgb'
+)
+
+test_generator_notred = test_datagen.flow_from_directory(
+    test_dir,
+    target_size=(150, 150),  # resizes all images
+    batch_size=20,
+    class_mode='categorical',
+    color_mode='rgb',
+    shuffle=False
+)
+
 #-----------------------------------------------------------------------------------------------------------------------
-# NETWORK
+# CALLBACKS
+#-----------------------------------------------------------------------------------------------------------------------
+
+# callback to save the running time in each epoch
+class TimeHistory(Callback):
+    def on_train_begin(self, logs={}):
+        self.times = []
+
+    def on_epoch_begin(self, batch, logs={}):
+        self.epoch_time_start = time.time()
+
+    def on_epoch_end(self, batch, logs={}):
+        self.times.append(time.time() - self.epoch_time_start)
+
+time_callback = TimeHistory()
+
+#-----------------------------------------------------------------------------------------------------------------------
+# FIRST RANDOM NETWORK
+#-----------------------------------------------------------------------------------------------------------------------
+
+model = models.Sequential()
+
+model.add(layers.Conv2D(100, (3, 3), activation='relu', input_shape=(150, 150, 3), padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(200, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(400, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(400, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Flatten())
+model.add(layers.Dense(400, activation='relu'))
+model.add(layers.Dense(24, activation='softmax'))
+
+model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['acc'])
+
+csv_logger = CSVLogger(outputs_dir + r'\training_random.log', separator=',', append=False)
+
+history_1st = model.fit_generator(train_generator_notred, steps_per_epoch=100, epochs=30,
+                              validation_data=validation_generator_notred, validation_steps=240,
+                              callbacks=[time_callback, csv_logger])
+
+test_score_1st = model.evaluate_generator(test_generator)
+
+#-----------------------------------------------------------------------------------------------------------------------
+# BEST NETWORK
 #-----------------------------------------------------------------------------------------------------------------------
 
 model = models.Sequential()
@@ -349,18 +420,6 @@ model.add(layers.Dense(24, activation='softmax'))
 
 model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['acc'])
 
-# callback to save the running time in each epoch
-class TimeHistory(Callback):
-    def on_train_begin(self, logs={}):
-        self.times = []
-
-    def on_epoch_begin(self, batch, logs={}):
-        self.epoch_time_start = time.time()
-
-    def on_epoch_end(self, batch, logs={}):
-        self.times.append(time.time() - self.epoch_time_start)
-
-time_callback = TimeHistory()
 csv_logger = CSVLogger(outputs_dir + r'\training.log', separator=',', append=False)
 
 history = model.fit_generator(train_generator, steps_per_epoch=1200, epochs=15,
@@ -612,20 +671,25 @@ plot_model(model, to_file=(outputs_dir + "/{}.png".format(str(filename).split(".
 # ANALYZING OVERFITTING
 #-----------------------------------------------------------------------------------------------------------------------
 
-log_data = pd.read_csv('training.log', sep=',', engine='python')
+log_data = pd.read_csv(outputs_dir + r'\training.log', sep=',', engine='python')
 
 # DISPLAYING CURVES OF LOSS AND ACCURACY DURING TRAINING
-acc = history22.history['acc']
-val_acc = history22.history['val_acc']
+acc = log_data['acc']
+val_acc = log_data['val_acc']
 
-loss = history22.history['loss']
-val_loss = history22.history['val_loss']
+loss = log_data['loss']
+val_loss = log_data['val_loss']
 
 epochs = range(1, len(loss) + 1)
 
 plt.plot(epochs, acc, 'bo', label='Training acc', color='darkseagreen')
 plt.plot(epochs, val_acc, 'b', label='Validation acc', color='darkseagreen')
 plt.title('Training and Validation Accuracy')
+plt.box(True)
+plt.rcParams['axes.spines.right'] = False
+plt.rcParams['axes.spines.top'] = False
+plt.rcParams['axes.spines.left'] = True
+plt.rcParams['axes.spines.bottom'] = True
 plt.xlabel('Epochs')
 plt.ylabel('Accuracy')
 plt.legend()
@@ -635,6 +699,11 @@ plt.figure()
 plt.plot(epochs, loss, 'bo', label='Training loss', color='darkseagreen')
 plt.plot(epochs, val_loss, 'b', label='Validation loss', color='darkseagreen')
 plt.title('Training and Validation Loss')
+plt.box(True)
+plt.rcParams['axes.spines.right'] = False
+plt.rcParams['axes.spines.top'] = False
+plt.rcParams['axes.spines.left'] = True
+plt.rcParams['axes.spines.bottom'] = True
 plt.xlabel('Epochs')
 plt.ylabel('Loss')
 plt.legend()
