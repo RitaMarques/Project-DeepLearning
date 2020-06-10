@@ -351,17 +351,21 @@ test_generator = test_datagen.flow_from_directory(
 
 model = models.Sequential()
 
-model.add(layers.Conv2D(100, (3, 3), activation='relu', input_shape=(150, 150, 3), padding='same'))
+model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(150, 150, 3), padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(200, (3, 3), activation='relu', padding='same'))
+model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(400, (3, 3), activation='relu', padding='same'))
+model.add(layers.Conv2D(128, (3, 3), activation='relu', padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(400, (3, 3), activation='relu', padding='same'))
+model.add(layers.Conv2D(128, (3, 3), activation='relu', padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
+
 model.add(layers.Flatten())
-model.add(layers.Dense(400, activation='relu'))
+model.add(layers.Dropout(0.5))
+model.add(layers.Dense(256, activation='relu'))
 model.add(layers.Dense(24, activation='softmax'))
+
+model.summary()
 
 
 
