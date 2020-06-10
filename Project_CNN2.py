@@ -12,7 +12,6 @@ from keras import models
 from keras.preprocessing.image import ImageDataGenerator
 import matplotlib.pyplot as plt
 import seaborn as sns
-#import kaggle
 from tqdm import tqdm
 import numpy as np
 from sklearn.metrics import confusion_matrix
@@ -20,7 +19,7 @@ from sklearn.model_selection import ParameterGrid
 import tarfile
 from numpy.random import seed
 from tensorflow import random as tfrandom
-from keras.callbacks import Callback
+from keras.callbacks import Callback, CSVLogger
 import time
 from keras.models import load_model
 from keras.utils.vis_utils import plot_model
@@ -40,8 +39,8 @@ def createdir(mydir):
         pass
 
 # set basedir
-basedir = r'C:\Users\TITA\Downloads\data'
-#basedir = r'.\data'
+#basedir = r'C:\Users\TITA\Downloads\data'
+basedir = r'.\data'
 
 # define directories
 data1000 = (basedir + r"\data1000")
@@ -362,9 +361,11 @@ class TimeHistory(Callback):
         self.times.append(time.time() - self.epoch_time_start)
 
 time_callback = TimeHistory()
+csv_logger = CSVLogger(outputs_dir + r'\training.log', separator=',', append=False)
+
 history = model.fit_generator(train_generator, steps_per_epoch=1200, epochs=15,
                               validation_data=validation_generator, validation_steps=240,
-                              callbacks=[time_callback])
+                              callbacks=[time_callback, csv_logger])
 
 times = time_callback.times
 
@@ -440,6 +441,7 @@ parameters = {'units1': [16, 32],
 
 # creating a list of all possible parameter combinations and empty dicts to store information about the models
 parameters = list(ParameterGrid(parameters))
+pd.DataFrame(parameters).to_csv(outputs_dir + r'\grid_parameters.csv')
 histories = {}
 test_preds = {}
 test_acc = {}
@@ -610,14 +612,14 @@ plot_model(model, to_file=(outputs_dir + "/{}.png".format(str(filename).split(".
 # ANALYZING OVERFITTING
 #-----------------------------------------------------------------------------------------------------------------------
 
-#   IMPORT BEST MODEL
+log_data = pd.read_csv('training.log', sep=',', engine='python')
 
 # DISPLAYING CURVES OF LOSS AND ACCURACY DURING TRAINING
-acc = history.history['acc']
-val_acc = history.history['val_acc']
+acc = history22.history['acc']
+val_acc = history22.history['val_acc']
 
-loss = history.history['loss']
-val_loss = history.history['val_loss']
+loss = history22.history['loss']
+val_loss = history22.history['val_loss']
 
 epochs = range(1, len(loss) + 1)
 
