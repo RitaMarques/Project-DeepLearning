@@ -377,7 +377,7 @@ parameters = {'units1': [16, 32],
               'dense': [0, 1],
               'dropout': [0, 0.2, 0.5]}
 
-# creating a list of all possible parameter combinations
+# creating a list of all possible parameter combinations and empty dicts to store information about the models
 parameters = list(ParameterGrid(parameters))
 histories = {}
 test_preds = {}

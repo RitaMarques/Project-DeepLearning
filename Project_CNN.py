@@ -416,7 +416,7 @@ history23 = model.fit_generator(train_generator, steps_per_epoch=1200, epochs=15
 history24 = model.fit_generator(train_generator, steps_per_epoch=1200, epochs=15,
                               validation_data=validation_generator, validation_steps=240,
                               callbacks=[time_callback])
-
+# TODO CORRER A SEGUIR ISTO
 times22 = time_callback.times
 times23 = time_callback.times
 times24 = time_callback.times
@@ -432,6 +432,8 @@ cm = confusion_matrix(test_labels, predicted_class_indices)
 test_score22 = model.evaluate_generator(test_generator)
 test_score23 = model.evaluate_generator(test_generator)
 test_score24 = model.evaluate_generator(test_generator)
+
+save_acc_times(model, history24, times24, test_score24)
 
 def save_acc_times(model, history, times, test_score):
     # save the model
