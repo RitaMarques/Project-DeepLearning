@@ -351,7 +351,6 @@ test_generator = test_datagen.flow_from_directory(
 
 model = models.Sequential()
 
-# model 22: acc: 0.9911, val_acc: 0.9869, test_acc: 0.9906
 model.add(layers.Conv2D(16, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
 model.add(layers.MaxPooling2D(2, 2))
 model.add(layers.Conv2D(32, (3, 3), activation='relu', padding='same'))
@@ -363,34 +362,6 @@ model.add(layers.MaxPooling2D(2, 2))
 model.add(layers.Flatten())
 model.add(layers.Dropout(0.5))
 model.add(layers.Dense(256, activation='relu'))
-model.add(layers.Dense(24, activation='softmax'))
-
-# model 23: acc: 0.9808, val_acc: 0.9871, test_acc: 0.9867
-model.add(layers.Conv2D(16, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(32, (3, 3), activation='relu', padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Flatten()) 
-model.add(layers.Dropout(0.5))
-model.add(layers.Dense(64, activation='relu'))
-model.add(layers.Dense(24, activation='softmax'))
-
-# model 24: acc: 0.9912, val_acc: 0.9827, test_acc: 0.9835
-model.add(layers.Conv2D(16, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(32, (3, 3), activation='relu', padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(128, (3, 3), activation='relu', padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Flatten())
-model.add(layers.Dropout(0.5))
-model.add(layers.Dense(128, activation='relu'))
 model.add(layers.Dense(24, activation='softmax'))
 
 model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['acc'])
@@ -407,21 +378,11 @@ class TimeHistory(Callback):
         self.times.append(time.time() - self.epoch_time_start)
 
 time_callback = TimeHistory()
-history22 = model.fit_generator(train_generator, steps_per_epoch=1200, epochs=15,
-                              validation_data=validation_generator, validation_steps=240,
-                              callbacks=[time_callback])
-history23 = model.fit_generator(train_generator, steps_per_epoch=1200, epochs=15,
-                              validation_data=validation_generator, validation_steps=240,
-                              callbacks=[time_callback])
-history24 = model.fit_generator(train_generator, steps_per_epoch=1200, epochs=15,
+history = model.fit_generator(train_generator, steps_per_epoch=1200, epochs=15,
                               validation_data=validation_generator, validation_steps=240,
                               callbacks=[time_callback])
 
-times22 = time_callback.times
-times23 = time_callback.times
-times24 = time_callback.times
-
-
+times = time_callback.times
 
 # apply model to the test set
 preds = model.predict(test_generator)
@@ -429,140 +390,37 @@ predicted_class_indices = np.argmax(preds, axis=1)
 test_labels = test_generator.labels
 
 cm = confusion_matrix(test_labels, predicted_class_indices)
-test_score22 = model.evaluate_generator(test_generator)
-test_score23 = model.evaluate_generator(test_generator)
-test_score24 = model.evaluate_generator(test_generator)
+test_score = model.evaluate_generator(test_generator)
 
 def save_acc_times(model, history, times, test_score):
+    '''Function that outputs the fitted model to h5 file,
+    the train, validation and test sets accuracies to a csv file
+    and the training times also to a csv file to keep record of the performance of each model'''
+
     # save the model
     id_num = input("Insert Model ID number: ")
     model.save_weights(r'.\outputs\model_weights{}.h5'.format(id_num))
     model.save(r'.\outputs\model_keras{}.h5'.format(id_num))
 
-    df_save_acc = pd.DataFrame({'Train Acc': history.history.get('acc')[-1],
-                            'Val Acc': history.history.get('val_acc')[-1],
-                            'Test Acc': test_score[1]}, index='Model {}'.format(id_num))
-    df_save_times = pd.DataFrame({'Times': times}, index='Model {}'.format(id_num))
+    df_save_acc = pd.DataFrame({'Model': ['Best Model {}'.format(id_num)], 'Train Acc': history.history.get('acc')[-1],
+                                'Val Acc': history.history.get('val_acc')[-1], 'Test Acc': test_score[1]})
 
-    df_save_acc.to_csv(r'.\outputs\models_acc.csv')
-    df_save_times.to_csv(r'.\outputs\models_times.csv')
+    times_dict = {'Model': ['Best Model {}'.format(id_num)]}
+    for idx, time in enumerate(times):
+        times_dict[idx] = times[idx]
+    df_save_times = pd.DataFrame(times_dict)
 
-#-----------------------------------------------------------------------------------------------------------------------
-# ANALYZING RESULTS
-#-----------------------------------------------------------------------------------------------------------------------
+    if os.path.exists(r'.\outputs\models_acc.csv'):
+        df_save_acc.to_csv(r'.\outputs\models_acc.csv', df_save_acc, mode='a', header=False, index=False)
+    else:
+        df_save_acc.to_csv(r'.\outputs\models_acc.csv')
 
-# confusion matrix plot
-def plot_cm(confusion_matrix: np.array, classnames: list):
-    """
-    Function that creates a confusion matrix plot using the Wikipedia convention for the axis.
-    :param confusion_matrix: confusion matrix that will be plotted
-    :param classnames: labels of the classes"""
+    if os.path.exists(r'.\outputs\models_times.csv'):
+        df_save_times.to_csv(r'.\outputs\models_times.csv', df_save_times, mode='a', header=False, index=False)
+    else:
+        df_save_times.to_csv(r'.\outputs\models_times.csv')
 
-    confusionmatrix = confusion_matrix
-    class_names = classnames
-
-    fig, ax = plt.subplots(figsize=(50, 50))
-    im = plt.imshow(confusionmatrix, cmap=plt.cm.cividis)
-    plt.colorbar()
-
-    # We want to show all ticks...
-    ax.set_xticks(np.arange(len(class_names)))
-    ax.set_yticks(np.arange(len(class_names)))
-    # ... and label them with the respective list entries
-    ax.set_xticklabels(class_names)
-    ax.set_yticklabels(class_names)
-
-    # Rotate the tick labels and set their alignment.
-    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
-
-    # Loop over data dimensions and create text annotations.
-    for i in range(len(class_names)):
-        for j in range(len(class_names)):
-            text = ax.text(j, i, confusionmatrix[i, j],
-                           ha="center", va="center", color="w")
-
-    ax.set_title("Confusion Matrix")
-    plt.xlabel('Targets')
-    plt.ylabel('Predictions')
-    plt.ylim(top=len(class_names) - 0.5)  # adjust the top leaving bottom unchanged
-    plt.ylim(bottom=-0.5)  # adjust the bottom leaving top unchanged
-    return plt.show()
-plot_cm(cm, alphabet_lower)
-
-# training time single evolution plot
-sns.lineplot(x=list(range(1, 16)), y=times23)
-plt.title('Training Time')
-plt.xlabel('Epochs')
-plt.ylabel('Time in secs')
-plt.show()
-
-# models comparison time plot
-epochs = list(range(1, 16))
-plt.plot(epochs, times22, label='Model 1', colormap='Accent')
-plt.plot(epochs, times23, label='Model 2', colormap='Accent')
-plt.plot(epochs, times24, label='Model 3', colormap='Accent')
-plt.title('Training Time')
-plt.xlabel('Epochs')
-plt.ylabel('Time in secs')
-plt.legend()
-plt.show()
-
-df_times = pd.DataFrame(columns=['Times'], index=['Best Model 1', 'Best Model 2', 'Best Model 3'])
-df_times.loc['Best Model 1'] = times22
-df_times.loc['Best Model 2'] = times23
-df_times.loc['Best Model 3'] = times24
-df_times.to_csv(outputs_dir+r'\models_times.csv')
-
-# best models accuracy comparison
-model1_22_13_train = {'Train Acc': history22.history.get('acc')[-1], 'Val Acc': history22.history.get('val_acc')[-1],
-                      'Test Acc': test_score22[1]}
-model2_23_14_train = {'Train Acc': history23.history.get('acc')[-1], 'Val Acc': history23.history.get('val_acc')[-1],
-                      'Test Acc': 0.99}
-model3_24_15_train = {'Train Acc': history24.history.get('acc')[-1], 'Val Acc': history24.history.get('val_acc')[-1],
-                      'Test Acc': test_score24[1]}
-
-df_best_models = pd.DataFrame(columns=['Train Acc', 'Val Acc', 'Test Acc'],
-                              index=['Best Model 1', 'Best Model 2', 'Best Model 3'])
-df_best_models.loc['Best Model 1'] = model1_22_13_train
-df_best_models.loc['Best Model 2'] = model2_23_14_train
-df_best_models.loc['Best Model 3'] = model3_24_15_train
-df_best_models = df_best_models.transpose()
-
-df_best_models.to_csv(outputs_dir+r'\models_acc.csv')
-
-# best models accuracy comparison plot
-df_best_models.plot.bar(rot=0, colormap='Accent')
-plt.ylim(0.97, 1)
-plt.show()
-
-def comparison_plots(df, histories, times, test):
-    df_plot = df.copy()
-
-    for key in histories.keys():
-        model = {'Model': key, 'Train Acc': histories[key].history.get('acc')[-1],
-                 'Val Acc': histories[key].history.get('val_acc')[-1],
-                 'Test Acc': test[key][1]}
-
-        df_plot = df_plot.append(model, ignore_index=True)
-
-        epochs = list(range(1, (len(times[key])+1)))
-        plt.plot(epochs, times[key], label=key, colormap='Accent')
-
-    plt.title('Training Time')
-    plt.xlabel('Epochs')
-    plt.ylabel('Time in secs')
-    plt.legend()
-    plt.show()
-
-    plt.figure()
-
-    df_plot = df_plot.transpose()
-    df_plot.set_index('Model', inplace=True, drop=True)
-    df_plot.plot.bar(rot=0, colormap='Accent')
-    plt.ylim(0.95, 1)
-    plt.title("Models' Accuracies Comparison")
-    plt.show()
-
+save_acc_times(model, history, times, test_score)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # GRID SEARCH
@@ -615,9 +473,117 @@ history = grid_search.fit(X_train, train_generator.labels)
 best_parameters = grid_search.best_params_
 best_accuracy = grid_search.best_score_
 
+
+# -----------------------------------------------------------------------------------------------------------------------
+# ANALYZING RESULTS
+# -----------------------------------------------------------------------------------------------------------------------
+
+# confusion matrix plot
+def plot_cm(confusion_matrix: np.array, classnames: list):
+    """
+    Function that creates a confusion matrix plot using the Wikipedia convention for the axis.
+    :param confusion_matrix: confusion matrix that will be plotted
+    :param classnames: labels of the classes"""
+
+    confusionmatrix = confusion_matrix
+    class_names = classnames
+
+    fig, ax = plt.subplots(figsize=(50, 50))
+    im = plt.imshow(confusionmatrix, cmap=plt.cm.cividis)
+    plt.colorbar()
+
+    # We want to show all ticks...
+    ax.set_xticks(np.arange(len(class_names)))
+    ax.set_yticks(np.arange(len(class_names)))
+    # ... and label them with the respective list entries
+    ax.set_xticklabels(class_names)
+    ax.set_yticklabels(class_names)
+
+    # Rotate the tick labels and set their alignment.
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+
+    # Loop over data dimensions and create text annotations.
+    for i in range(len(class_names)):
+        for j in range(len(class_names)):
+            text = ax.text(j, i, confusionmatrix[i, j],
+                           ha="center", va="center", color="w")
+
+    ax.set_title("Confusion Matrix")
+    plt.xlabel('Targets')
+    plt.ylabel('Predictions')
+    plt.ylim(top=len(class_names) - 0.5)  # adjust the top leaving bottom unchanged
+    plt.ylim(bottom=-0.5)  # adjust the bottom leaving top unchanged
+    return plt.show()
+plot_cm(cm, alphabet_lower)
+
+# import csv with all accuracies and times
+df_acc = pd.read_csv(r'.\outputs\models_acc.csv')
+df_times = pd.read_csv(r'.\outputs\models_times.csv')
+df_acc.set_index('Model', inplace=True, drop=True)
+df_times.set_index('Model', inplace=True, drop=True)
+
+def grid_integration(df_acc, df_times, histories, times, test):
+    '''Function that takes the outputs of the grid search and export them to csv'''
+
+    df_acc_plot = df_acc.copy()
+    df_time_plot = df_times.copy()
+
+    for key in histories.keys():
+        model = {'Model': key, 'Train Acc': histories[key].history.get('acc')[-1],
+                 'Val Acc': histories[key].history.get('val_acc')[-1],
+                 'Test Acc': test[key][1]}
+
+        df_acc_plot = df_acc_plot.append(model, ignore_index=True)
+
+        times_dict = {'Model': key}
+        for idx, time in enumerate(times):
+            times_dict[idx + 1] = times[idx]
+
+        df_time_plot = df_time_plot.append(times_dict, ignore_index=True)
+
+    return df_acc_plot, df_time_plot
+
+grid_integration(df_acc, df_times, histories, times, test_acc)
+
+# import csv with all accuracies and times
+df_acc = pd.read_csv(r'.\outputs\models_acc.csv')
+df_times = pd.read_csv(r'.\outputs\models_times.csv')
+df_acc.set_index('Model', inplace=True, drop=True)
+df_times.set_index('Model', inplace=True, drop=True)
+
+def comparison_plots(df_times, df_acc):
+    '''Function that takes the accuracies dataframe and training times dataframe of the models we want to compare and
+    plots the differences'''
+
+    df_time_plot = df_times.copy()
+    df_acc_plot = df_acc.copy()
+
+    df_time_plot = df_time_plot * 0.0166666667  # transform from seconds to minutes
+
+    # time plot
+    df_time_plot = df_time_plot.transpose()
+    df_time_plot.plot.line(rot=0, colormap='Accent')
+    plt.title('Training Time')
+    plt.xlabel('Epochs')
+    plt.ylabel('Time (in minutes)')
+    plt.legend()
+    plt.show()
+
+    # accuracy plot
+    df_acc_plot = df_acc_plot.transpose()
+    df_acc_plot.plot.bar(rot=0, colormap='Accent')
+    plt.ylim(0.95, 1)
+    plt.legend(loc='best')
+    plt.title("Models' Accuracies Comparison")
+    plt.show()
+
+comparison_plots(df_times, df_acc)
+
 #-----------------------------------------------------------------------------------------------------------------------
 # ANALYZING OVERFITTING
 #-----------------------------------------------------------------------------------------------------------------------
+
+#   IMPORT BEST MODEL
 
 # DISPLAYING CURVES OF LOSS AND ACCURACY DURING TRAINING
 acc = history.history['acc']
