@@ -12,16 +12,15 @@ from keras import models
 from keras.preprocessing.image import ImageDataGenerator
 import matplotlib.pyplot as plt
 import seaborn as sns
-#import kaggle
+import kaggle
 from tqdm import tqdm
 import numpy as np
 from sklearn.metrics import confusion_matrix
 import tarfile
-from keras.wrappers.scikit_learn import KerasClassifier
+from keras.callbacks import Callback
 from numpy.random import seed
 from tensorflow import random as tfrandom
-from sklearn.model_selection import GridSearchCV
-from keras.callbacks import Callback
+from sklearn.model_selection import ParameterGrid
 import time
 seed(5)
 tfrandom.set_seed(5)
@@ -39,8 +38,8 @@ def createdir(mydir):
         pass
 
 # set basedir
-basedir = r'C:\Users\TITA\Downloads\data'
-#basedir = r'.\data'
+#basedir = r'C:\Users\TITA\Downloads\data'
+basedir = r'.\data'
 
 # define directories
 data1000 = (basedir + r"\data1000")
@@ -53,7 +52,6 @@ test_dir = os.path.join(destinationdir, 'test')
 train_red_dir = (basedir + r'\red\train_red')
 val_red_dir = (basedir + r'\red\val_red')
 test_red_dir = (basedir + r'\red\test_red')
-outputs_dir = r'.\outputs'
 
 #create all the directories
 createdir(r'data')
@@ -65,20 +63,10 @@ createdir(basedir + r"\red")
 createdir(train_red_dir)
 createdir(val_red_dir)
 createdir(test_red_dir)
-createdir(outputs_dir)
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 # LOADING THE DATA
-#-----------------------------------------------------------------------------------------------------------------------
-
-# this code will download the data (it has 2GB). If the data is already downloaded this step can be skipped
-kaggle.api.authenticate()
-kaggle.api.dataset_download_files('mrgeislinger/asl-rgb-depth-fingerspelling-spelling-it-out', path=r'data', unzip=True)
-
-os.rename(r".\data\dataset5", r".\data\original")
-
-#-----------------------------------------------------------------------------------------------------------------------
-# GET DATA NO KAGGLE
 #-----------------------------------------------------------------------------------------------------------------------
 import requests
 
@@ -345,57 +333,11 @@ test_generator = test_datagen.flow_from_directory(
     shuffle=False
 )
 
+
 #-----------------------------------------------------------------------------------------------------------------------
 # NETWORK
 #-----------------------------------------------------------------------------------------------------------------------
 
-model = models.Sequential()
-
-# model 22: acc: 0.9911, val_acc: 0.9869, test_acc: 0.9906
-model.add(layers.Conv2D(16, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(32, (3, 3), activation='relu', padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(128, (3, 3), activation='relu', padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Flatten())
-model.add(layers.Dropout(0.5))
-model.add(layers.Dense(256, activation='relu'))
-model.add(layers.Dense(24, activation='softmax'))
-
-# model 23: acc: 0.9808, val_acc: 0.9871, test_acc: 0.9867
-model.add(layers.Conv2D(16, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(32, (3, 3), activation='relu', padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Flatten()) 
-model.add(layers.Dropout(0.5))
-model.add(layers.Dense(64, activation='relu'))
-model.add(layers.Dense(24, activation='softmax'))
-
-# model 24: acc: 0.9912, val_acc: 0.9827, test_acc: 0.9835
-model.add(layers.Conv2D(16, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(32, (3, 3), activation='relu', padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Conv2D(128, (3, 3), activation='relu', padding='same'))
-model.add(layers.MaxPooling2D(2, 2))
-model.add(layers.Flatten())
-model.add(layers.Dropout(0.5))
-model.add(layers.Dense(128, activation='relu'))
-model.add(layers.Dense(24, activation='softmax'))
-
-model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['acc'])
-
-# callback to save the running time in each epoch
 class TimeHistory(Callback):
     def on_train_begin(self, logs={}):
         self.times = []
@@ -406,22 +348,60 @@ class TimeHistory(Callback):
     def on_epoch_end(self, batch, logs={}):
         self.times.append(time.time() - self.epoch_time_start)
 
+# defining the model building function
+def build_model(units1, optimizer, dropout=0, dense=0):
+    model = models.Sequential()
+    model.add(layers.Conv2D(units1, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
+    model.add(layers.MaxPooling2D(2, 2))
+    model.add(layers.Conv2D(units1*2, (3, 3), activation='relu', padding='same'))
+    model.add(layers.MaxPooling2D(2, 2))
+    model.add(layers.Conv2D(units1*4, (3, 3), activation='relu', padding='same'))
+    model.add(layers.MaxPooling2D(2, 2))
+    model.add(layers.Conv2D(units1*4, (3, 3), activation='relu', padding='same'))
+    model.add(layers.MaxPooling2D(2, 2))
+    model.add(layers.Flatten())  # vectorize to one dimensional representation
+    if dropout > 0:
+        model.add(layers.Dropout(dropout))
+    if dense == 1:
+        model.add(layers.Dense(units1*6, activation='relu'))
+    model.add(layers.Dense(24, activation='softmax'))
+    model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['acc'])
+
+    return model
+
 time_callback = TimeHistory()
-history22 = model.fit_generator(train_generator, steps_per_epoch=1200, epochs=15,
-                              validation_data=validation_generator, validation_steps=240,
-                              callbacks=[time_callback])
-history23 = model.fit_generator(train_generator, steps_per_epoch=1200, epochs=15,
-                              validation_data=validation_generator, validation_steps=240,
-                              callbacks=[time_callback])
-history24 = model.fit_generator(train_generator, steps_per_epoch=1200, epochs=15,
-                              validation_data=validation_generator, validation_steps=240,
-                              callbacks=[time_callback])
-# TODO CORRER A SEGUIR ISTO
-times22 = time_callback.times
-times23 = time_callback.times
-times24 = time_callback.times
+
+# defining parameters for grid search
+parameters = {'units1': [16, 32],
+              'optimizer': ['rmsprop'],
+              'dense': [0, 1],
+              'dropout': [0, 0.2, 0.5]}
+
+# creating a list of all possible parameter combinations and empty dicts to store information about the models
+parameters = list(ParameterGrid(parameters))
+histories = {}
+test_preds = {}
+test_acc = {}
+times = {}
+
+# testing all parameter combinations and saving the results in the histories, test_preds and test_acc dictionaries
+for parameter, model_id in zip(parameters, range(0, len(parameters))):
+    model = build_model(**parameter)
+    histories["model{0}".format(model_id)] = model.fit_generator(train_generator, steps_per_epoch=1200, epochs=15,
+                                                                 validation_data=validation_generator, callbacks=[time_callback],
+                                                                 validation_steps=240)
+    test_preds["model{0}".format(model_id)] = model.predict(test_generator)
+    test_acc["model{0}".format(model_id)] = model.evaluate_generator(test_generator)
+    times["model{0}".format(model_id)] = time_callback.times
 
 
+model = build_model(optimizer='rmsprop', dense=0, dropout=0, units1=32)
+model.fit_generator(train_generator, steps_per_epoch=1200, epochs=5, validation_data=validation_generator, validation_steps=240)
+
+# save the model
+id_num = input("Insert Model ID number: ")
+model.save_weights('model_weights{}.h5'.format(id_num))
+model.save('model_keras{}.h5'.format(id_num))
 
 # apply model to the test set
 preds = model.predict(test_generator)
@@ -429,31 +409,8 @@ predicted_class_indices = np.argmax(preds, axis=1)
 test_labels = test_generator.labels
 
 cm = confusion_matrix(test_labels, predicted_class_indices)
-test_score22 = model.evaluate_generator(test_generator)
-test_score23 = model.evaluate_generator(test_generator)
-test_score24 = model.evaluate_generator(test_generator)
+test_score = model.evaluate_generator(test_generator)
 
-save_acc_times(model, history24, times24, test_score24)
-
-def save_acc_times(model, history, times, test_score):
-    # save the model
-    id_num = input("Insert Model ID number: ")
-    model.save_weights(r'.\outputs\model_weights{}.h5'.format(id_num))
-    model.save(r'.\outputs\model_keras{}.h5'.format(id_num))
-
-    df_save_acc = pd.DataFrame({'Train Acc': history.history.get('acc')[-1],
-                            'Val Acc': history.history.get('val_acc')[-1],
-                            'Test Acc': test_score[1]}, index='Model {}'.format(id_num))
-    df_save_times = pd.DataFrame({'Times': times}, index='Model {}'.format(id_num))
-
-    df_save_acc.to_csv(r'.\outputs\models_acc.csv')
-    df_save_times.to_csv(r'.\outputs\models_times.csv')
-
-#-----------------------------------------------------------------------------------------------------------------------
-# ANALYZING RESULTS
-#-----------------------------------------------------------------------------------------------------------------------
-
-# confusion matrix plot
 def plot_cm(confusion_matrix: np.array, classnames: list):
     """
     Function that creates a confusion matrix plot using the Wikipedia convention for the axis.
@@ -489,133 +446,8 @@ def plot_cm(confusion_matrix: np.array, classnames: list):
     plt.ylim(top=len(class_names) - 0.5)  # adjust the top leaving bottom unchanged
     plt.ylim(bottom=-0.5)  # adjust the bottom leaving top unchanged
     return plt.show()
+
 plot_cm(cm, alphabet_lower)
-
-# training time single evolution plot
-sns.lineplot(x=list(range(1, 16)), y=times23)
-plt.title('Training Time')
-plt.xlabel('Epochs')
-plt.ylabel('Time in secs')
-plt.show()
-
-# models comparison time plot
-epochs = list(range(1, 16))
-plt.plot(epochs, times22, label='Model 1', colormap='Accent')
-plt.plot(epochs, times23, label='Model 2', colormap='Accent')
-plt.plot(epochs, times24, label='Model 3', colormap='Accent')
-plt.title('Training Time')
-plt.xlabel('Epochs')
-plt.ylabel('Time in secs')
-plt.legend()
-plt.show()
-
-df_times = pd.DataFrame(columns=['Times'], index=['Best Model 1', 'Best Model 2', 'Best Model 3'])
-df_times.loc['Best Model 1'] = times22
-df_times.loc['Best Model 2'] = times23
-df_times.loc['Best Model 3'] = times24
-df_times.to_csv(outputs_dir+r'\models_times.csv')
-
-# best models accuracy comparison
-model1_22_13_train = {'Train Acc': history22.history.get('acc')[-1], 'Val Acc': history22.history.get('val_acc')[-1],
-                      'Test Acc': test_score22[1]}
-model2_23_14_train = {'Train Acc': history23.history.get('acc')[-1], 'Val Acc': history23.history.get('val_acc')[-1],
-                      'Test Acc': 0.99}
-model3_24_15_train = {'Train Acc': history24.history.get('acc')[-1], 'Val Acc': history24.history.get('val_acc')[-1],
-                      'Test Acc': test_score24[1]}
-
-df_best_models = pd.DataFrame(columns=['Train Acc', 'Val Acc', 'Test Acc'],
-                              index=['Best Model 1', 'Best Model 2', 'Best Model 3'])
-df_best_models.loc['Best Model 1'] = model1_22_13_train
-df_best_models.loc['Best Model 2'] = model2_23_14_train
-df_best_models.loc['Best Model 3'] = model3_24_15_train
-df_best_models = df_best_models.transpose()
-
-df_best_models.to_csv(outputs_dir+r'\models_acc.csv')
-
-# best models accuracy comparison plot
-df_best_models.plot.bar(rot=0, colormap='Accent')
-plt.ylim(0.97, 1)
-plt.show()
-
-def comparison_plots(df, histories, times, test):
-    df_plot = df.copy()
-
-    for key in histories.keys():
-        model = {'Model': key, 'Train Acc': histories[key].history.get('acc')[-1],
-                 'Val Acc': histories[key].history.get('val_acc')[-1],
-                 'Test Acc': test[key][1]}
-
-        df_plot = df_plot.append(model, ignore_index=True)
-
-        epochs = list(range(1, (len(times[key])+1)))
-        plt.plot(epochs, times[key], label=key, colormap='Accent')
-
-    plt.title('Training Time')
-    plt.xlabel('Epochs')
-    plt.ylabel('Time in secs')
-    plt.legend()
-    plt.show()
-
-    plt.figure()
-
-    df_plot = df_plot.transpose()
-    df_plot.set_index('Model', inplace=True, drop=True)
-    df_plot.plot.bar(rot=0, colormap='Accent')
-    plt.ylim(0.95, 1)
-    plt.title("Models' Accuracies Comparison")
-    plt.show()
-
-
-#-----------------------------------------------------------------------------------------------------------------------
-# GRID SEARCH
-#-----------------------------------------------------------------------------------------------------------------------
-
-# defining the model building function
-def build_model(units1, optimizer, dropout=0, dense=0):
-    model = models.Sequential()
-    model.add(layers.Conv2D(units1, (3, 3), activation='relu', input_shape=(150, 150, 1), padding='same'))
-    model.add(layers.MaxPooling2D(2, 2))
-    model.add(layers.Conv2D(units1*2, (3, 3), activation='relu', padding='same'))
-    model.add(layers.MaxPooling2D(2, 2))
-    model.add(layers.Conv2D(units1*4, (3, 3), activation='relu', padding='same'))
-    model.add(layers.MaxPooling2D(2, 2))
-    model.add(layers.Conv2D(units1*4, (3, 3), activation='relu', padding='same'))
-    model.add(layers.MaxPooling2D(2, 2))
-    model.add(layers.Flatten())  # vectorize to one dimensional representation
-    if dropout > 0:
-        model.add(layers.Dropout(dropout))
-    if dense == 1:
-        model.add(layers.Dense(units1*6, activation='relu'))
-    model.add(layers.Dense(24, activation='softmax'))
-    model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['acc'])
-
-    return model
-
-# the model will be like scikit-learn models so that it can be used in GridSearch
-model = KerasClassifier(build_fn=build_model)
-
-# defining parameters for grid search
-parameters = {'units1': [16, 32],
-              'optimizer': ['adam', 'rmsprop'],
-              'dense': [0, 1],
-              'dropout': [0, 0.2, 0.5],
-              'steps_per_epoch': [1200],
-              'epochs': [15]}
-
-# getting the data out of train_generator
-data_list = []
-batch_index = 0
-while batch_index <= train_generator.batch_index:
-    data = train_generator.next()
-    data_list.append(data[0])
-    batch_index = batch_index + 1
-X_train = np.asarray(data_list)
-
-# GridSearch
-grid_search = GridSearchCV(estimator=model, param_grid=parameters, scoring='accuracy', cv=2, verbose=True, n_jobs=-1)
-history = grid_search.fit(X_train, train_generator.labels)
-best_parameters = grid_search.best_params_
-best_accuracy = grid_search.best_score_
 
 #-----------------------------------------------------------------------------------------------------------------------
 # ANALYZING OVERFITTING
@@ -630,8 +462,8 @@ val_loss = history.history['val_loss']
 
 epochs = range(1, len(loss) + 1)
 
-plt.plot(epochs, acc, 'bo', label='Training acc', color='darkseagreen')
-plt.plot(epochs, val_acc, 'b', label='Validation acc', color='darkseagreen')
+plt.plot(epochs, acc, 'bo', label='Training acc')
+plt.plot(epochs, val_acc, 'b', label='Validation acc')
 plt.title('Training and Validation Accuracy')
 plt.xlabel('Epochs')
 plt.ylabel('Accuracy')
@@ -639,8 +471,8 @@ plt.legend()
 
 plt.figure()
 
-plt.plot(epochs, loss, 'bo', label='Training loss', color='darkseagreen')
-plt.plot(epochs, val_loss, 'b', label='Validation loss', color='darkseagreen')
+plt.plot(epochs, loss, 'bo', label='Training loss')
+plt.plot(epochs, val_loss, 'b', label='Validation loss')
 plt.title('Training and Validation Loss')
 plt.xlabel('Epochs')
 plt.ylabel('Loss')

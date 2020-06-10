@@ -16,13 +16,14 @@ import seaborn as sns
 from tqdm import tqdm
 import numpy as np
 from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import ParameterGrid
 import tarfile
-from keras.wrappers.scikit_learn import KerasClassifier
 from numpy.random import seed
 from tensorflow import random as tfrandom
-from sklearn.model_selection import GridSearchCV
 from keras.callbacks import Callback
 import time
+from keras.models import load_model
+from keras.utils.vis_utils import plot_model
 seed(5)
 tfrandom.set_seed(5)
 
@@ -68,17 +69,7 @@ createdir(test_red_dir)
 createdir(outputs_dir)
 
 #-----------------------------------------------------------------------------------------------------------------------
-# LOADING THE DATA
-#-----------------------------------------------------------------------------------------------------------------------
-
-# this code will download the data (it has 2GB). If the data is already downloaded this step can be skipped
-kaggle.api.authenticate()
-kaggle.api.dataset_download_files('mrgeislinger/asl-rgb-depth-fingerspelling-spelling-it-out', path=r'data', unzip=True)
-
-os.rename(r".\data\dataset5", r".\data\original")
-
-#-----------------------------------------------------------------------------------------------------------------------
-# GET DATA NO KAGGLE
+# LOAD DATA
 #-----------------------------------------------------------------------------------------------------------------------
 import requests
 
@@ -101,13 +92,6 @@ if os.path.exists(filename):
     reply = input("Delete original file " + filename + "? [y/[n]] ")
     if reply == 'y':
         os.remove(filename)
-
-
-#simple
-#http://www.cvssp.org/FingerSpellingKinect2011/fingerspelling5.tar.bz2
-
-#hard
-#http://www.cvssp.org/FingerSpellingKinect2011/dataset9-depth.tar.gz
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -402,21 +386,22 @@ def save_acc_times(model, history, times, test_score):
     model.save_weights(r'.\outputs\model_weights{}.h5'.format(id_num))
     model.save(r'.\outputs\model_keras{}.h5'.format(id_num))
 
-    df_save_acc = pd.DataFrame({'Model': ['Best Model {}'.format(id_num)], 'Train Acc': history.history.get('acc')[-1],
+    df_save_acc = pd.DataFrame({'Model': ['Model {}'.format(id_num)], 'Train Acc': history.history.get('acc')[-1],
                                 'Val Acc': history.history.get('val_acc')[-1], 'Test Acc': test_score[1]})
 
-    times_dict = {'Model': ['Best Model {}'.format(id_num)]}
+    times_dict = {'Model': ['Model {}'.format(id_num)]}
     for idx, time in enumerate(times):
         times_dict[idx] = times[idx]
     df_save_times = pd.DataFrame(times_dict)
 
+
     if os.path.exists(r'.\outputs\models_acc.csv'):
-        df_save_acc.to_csv(r'.\outputs\models_acc.csv', df_save_acc, mode='a', header=False, index=False)
+        df_save_acc.to_csv(r'.\outputs\models_acc.csv', mode='a', header=False, index=False)
     else:
         df_save_acc.to_csv(r'.\outputs\models_acc.csv')
 
     if os.path.exists(r'.\outputs\models_times.csv'):
-        df_save_times.to_csv(r'.\outputs\models_times.csv', df_save_times, mode='a', header=False, index=False)
+        df_save_times.to_csv(r'.\outputs\models_times.csv', mode='a', header=False, index=False)
     else:
         df_save_times.to_csv(r'.\outputs\models_times.csv')
 
@@ -447,31 +432,28 @@ def build_model(units1, optimizer, dropout=0, dense=0):
 
     return model
 
-# the model will be like scikit-learn models so that it can be used in GridSearch
-model = KerasClassifier(build_fn=build_model)
-
 # defining parameters for grid search
 parameters = {'units1': [16, 32],
-              'optimizer': ['adam', 'rmsprop'],
+              'optimizer': ['rmsprop'],
               'dense': [0, 1],
-              'dropout': [0, 0.2, 0.5],
-              'steps_per_epoch': [1200],
-              'epochs': [15]}
+              'dropout': [0, 0.2, 0.5]}
 
-# getting the data out of train_generator
-data_list = []
-batch_index = 0
-while batch_index <= train_generator.batch_index:
-    data = train_generator.next()
-    data_list.append(data[0])
-    batch_index = batch_index + 1
-X_train = np.asarray(data_list)
+# creating a list of all possible parameter combinations and empty dicts to store information about the models
+parameters = list(ParameterGrid(parameters))
+histories = {}
+test_preds = {}
+test_acc = {}
+times = {}
 
-# GridSearch
-grid_search = GridSearchCV(estimator=model, param_grid=parameters, scoring='accuracy', cv=2, verbose=True, n_jobs=-1)
-history = grid_search.fit(X_train, train_generator.labels)
-best_parameters = grid_search.best_params_
-best_accuracy = grid_search.best_score_
+# testing all parameter combinations and saving the results in the histories, test_preds and test_acc dictionaries
+for parameter, model_id in zip(parameters, range(0, len(parameters))):
+    model = build_model(**parameter)
+    histories["Model {0}".format(model_id)] = model.fit_generator(train_generator, steps_per_epoch=1200, epochs=15,
+                                                                 validation_data=validation_generator, callbacks=[time_callback],
+                                                                 validation_steps=240)
+    test_preds["Model {0}".format(model_id)] = model.predict(test_generator)
+    test_acc["Model {0}".format(model_id)] = model.evaluate_generator(test_generator)
+    times["Model {0}".format(model_id)] = time_callback.times
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -516,34 +498,37 @@ def plot_cm(confusion_matrix: np.array, classnames: list):
     return plt.show()
 plot_cm(cm, alphabet_lower)
 
-# import csv with all accuracies and times
-df_acc = pd.read_csv(r'.\outputs\models_acc.csv')
-df_times = pd.read_csv(r'.\outputs\models_times.csv')
-df_acc.set_index('Model', inplace=True, drop=True)
-df_times.set_index('Model', inplace=True, drop=True)
 
-def grid_integration(df_acc, df_times, histories, times, test):
+def grid_integration(histories, times, test_acc):
     '''Function that takes the outputs of the grid search and export them to csv'''
 
-    df_acc_plot = df_acc.copy()
-    df_time_plot = df_times.copy()
-
     for key in histories.keys():
-        model = {'Model': key, 'Train Acc': histories[key].history.get('acc')[-1],
+        model = {'Model': [key], 'Train Acc': histories[key].history.get('acc')[-1],
                  'Val Acc': histories[key].history.get('val_acc')[-1],
-                 'Test Acc': test[key][1]}
+                 'Test Acc': test_acc[key][1]}
 
-        df_acc_plot = df_acc_plot.append(model, ignore_index=True)
+        df_model = pd.DataFrame(model)
 
-        times_dict = {'Model': key}
-        for idx, time in enumerate(times):
-            times_dict[idx + 1] = times[idx]
+        if os.path.exists(r'.\outputs\models_acc.csv'):
+            df_model.to_csv(r'.\outputs\models_acc.csv', mode='a', header=False, index=False)
+        else:
+            df_model.to_csv(r'.\outputs\models_acc.csv')
 
-        df_time_plot = df_time_plot.append(times_dict, ignore_index=True)
 
-    return df_acc_plot, df_time_plot
+        times_dict = {'Model': [key]}
+        for idx, time in enumerate(times[key]):
+            times_dict[idx + 1] = times[key][idx]
 
-grid_integration(df_acc, df_times, histories, times, test_acc)
+        df_time = pd.DataFrame(times_dict)
+
+        if os.path.exists(r'.\outputs\models_times.csv'):
+            df_time.to_csv(r'.\outputs\models_times.csv', mode='a', header=False, index=False)
+        else:
+            df_time.to_csv(r'.\outputs\models_times.csv')
+
+
+grid_integration(histories, times, test_acc)
+
 
 # import csv with all accuracies and times
 df_acc = pd.read_csv(r'.\outputs\models_acc.csv')
@@ -562,22 +547,64 @@ def comparison_plots(df_times, df_acc):
 
     # time plot
     df_time_plot = df_time_plot.transpose()
-    df_time_plot.plot.line(rot=0, colormap='Accent')
+    df_time_plot.plot.line(rot=0, colormap='tab20')
     plt.title('Training Time')
     plt.xlabel('Epochs')
     plt.ylabel('Time (in minutes)')
-    plt.legend()
+    plt.legend(bbox_to_anchor=(1.01,0.5), loc="center left")
     plt.show()
 
     # accuracy plot
     df_acc_plot = df_acc_plot.transpose()
-    df_acc_plot.plot.bar(rot=0, colormap='Accent')
+    df_acc_plot.plot.bar(rot=0, colormap='tab20')
     plt.ylim(0.95, 1)
-    plt.legend(loc='best')
+    plt.ylabel('Accuracy')
+    plt.legend(bbox_to_anchor=(1.01,0.5), loc="center left")
     plt.title("Models' Accuracies Comparison")
     plt.show()
 
 comparison_plots(df_times, df_acc)
+
+def test_comparison (df_acc):
+    df_acc_plot = df_acc.copy()
+    df_acc_plot = df_acc_plot[['Test Acc', 'Val Acc']].sort_values('Test Acc', ascending=False).transpose()
+    df_acc_plot.plot.bar(rot=0, colormap='tab20')
+    plt.ylim(0.95, 1)
+    plt.ylabel('Accuracy')
+    plt.legend(bbox_to_anchor=(1.01,0.5), loc="center left")
+    plt.title("Models' Accuracies Comparison")
+    plt.box(True)
+    plt.rcParams['axes.spines.right'] = False
+    plt.rcParams['axes.spines.top'] = False
+    plt.rcParams['axes.spines.left'] = True
+    plt.rcParams['axes.spines.bottom'] = True
+    plt.show()
+
+test_comparison(df_acc)
+
+def best_models_comparison(df_acc, df_times, num_models=5):
+    df_acc_plot = df_acc.copy()
+    df_acc_plot = df_acc_plot[['Test Acc', 'Val Acc']].sort_values('Test Acc', ascending=False)
+    best_models = list(df_acc_plot.index.values[0:num_models])
+    df_acc_plot = df_acc_plot.iloc[0:5]
+    df_times_plot = df_times.copy().loc[best_models]
+
+    comparison_plots(df_times_plot, df_acc_plot)
+
+best_models_comparison(df_acc, df_times, num_models=5)
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# BEST MODELS
+#-----------------------------------------------------------------------------------------------------------------------
+
+filename = 'model_kerasBest Model 1.h5'
+best_model_1 = load_model(outputs_dir + r"/" + filename)
+model = load_model(outputs_dir + r"/" + filename)
+model.summary()
+# dá jeito para vermos o número de parametros a treinar no modelo
+plot_model(model, to_file=(outputs_dir + "/{}.png".format(str(filename).split(".")[0])), show_shapes=True, show_layer_names=True)
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 # ANALYZING OVERFITTING
