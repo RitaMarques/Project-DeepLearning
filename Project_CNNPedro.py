@@ -630,3 +630,19 @@ model.summary()
 # dá jeito para vermos o número de parametros a treinar no modelo
 
 plot_model(model, to_file=(outputs_dir + "/{}.png".format(str(filename).split(".")[0])), show_shapes=True, show_layer_names=True)
+
+model = models.Sequential()
+
+model.add(layers.Conv2D(100, (3, 3), activation='relu', input_shape=(150, 150, 3), padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(200, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(400, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Conv2D(400, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2, 2))
+model.add(layers.Flatten())
+model.add(layers.Dense(400, activation='relu'))
+model.add(layers.Dense(24, activation='softmax'))
+
+model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['acc'])
