@@ -5,5 +5,5 @@ A mix of both datasets is used in order to obtain a more robust model by having 
 We will use a convolutional neural network based model to try to achieve the desired results.  
 We will try to analyse wich symbols are easier to identify and which are easier to counfound, and will try different appraches to improve a base model.  
 
-![](http://www.hellodoctor.co.za/wp-content/uploads/2014/09/Hello.jpg)
-*image_caption*
+![](https://user-images.githubusercontent.com/49924571/102016430-e3036900-3d58-11eb-99a3-38d7e5b288df.jpg)
+*Hello in American Sign Language*
