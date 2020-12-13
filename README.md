@@ -6,7 +6,7 @@
 In this project we try to identify the gestures in the American Sign Language Alphabet using a dataset of somewhat low resolution older pictures.
 Data is pulled directly in the notebook and preprocessing is also made available.
 
-We further analyse wich symbols are easier to identify and which are easier to confound and over this try different appraches to improve a base model.  
+We further analyse which symbols are easier to identify and which are easier to confound and over this try different approaches to improve a base model.  
 
 We Use a CNN based model, to identify the signals in images, with over 98% accuracy on the test images, but given the limited nature of training samples, new test samples 
 with different conditions are not so easily identified.  
