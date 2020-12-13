@@ -39,7 +39,6 @@ def createdir(mydir):
         pass
 
 # set basedir
-#basedir = r'C:\Users\TITA\Downloads\data'
 basedir = r'.\data'
 
 # define directories
@@ -97,7 +96,7 @@ if os.path.exists(filename):
 # PREPROCESS DATA
 #-----------------------------------------------------------------------------------------------------------------------
 
-# Alphabet
+# Alphabet, excluding two letters that depend on movement
 alphabet_lower = list(string.ascii_lowercase)
 alphabet_lower.remove('j')
 alphabet_lower.remove('z')
@@ -139,9 +138,11 @@ for dir in [train_dir, val_dir, test_dir]:
     for letter in alphabet_lower:
         createdir(os.path.join(dir, letter))
 
+# due to constraints in processing power and time of project, and given that images are similar
 # Select the number of images for each class in training
 # Select images from each person's folder
 images_per_person = 280
+
 
 for idx, folder in tqdm(enumerate(os.listdir(originaldir))):
     folder_base = os.path.join(originaldir, folder)
