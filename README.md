@@ -4,8 +4,14 @@
 *Hello in American Sign Language*
 
 In this project we try to identify the symbols in the American Sign Language, using two datasets of pictures of the signals.  
-A mix of both datasets is used in order to obtain a more robust model by having different sources of images.  
-We will use a convolutional neural network based model to try to achieve the desired results.  
-We will try to analyse wich symbols are easier to identify and which are easier to counfound, and will try different appraches to improve a base model.  
+Data is pulled directly in the notebook and preprocessing is also made available.
+
+We further analyse wich symbols are easier to identify and which are easier to confound and over this try different appraches to improve a base model.  
+
+We Use a CNN based model, to identify the signals in images, with over 98% accuracy on the test images, but given the limited nature of training samples, new test samples 
+with different conditions are not so easily identified.  
+The final report is available including other studies on the behaviour of the model.
 
 
+Image dataset reference:
+Pugeault, N., and Bowden, R. (2011). Spelling It Out: Real-Time ASL Fingerspelling Recognition In Proceedings of the 1st IEEE Workshop on Consumer Depth Cameras for Computer Vision, jointly with ICCV'2011
