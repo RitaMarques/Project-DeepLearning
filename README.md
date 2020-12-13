@@ -3,7 +3,7 @@
 ![](https://user-images.githubusercontent.com/49924571/102016430-e3036900-3d58-11eb-99a3-38d7e5b288df.jpg)  
 *Hello in American Sign Language*
 
-In this project we try to identify the symbols in the American Sign Language, using two datasets of pictures of the signals.  
+In this project we try to identify the gestures in the American Sign Language Alphabet using a dataset of somewhat low resolution older pictures.
 Data is pulled directly in the notebook and preprocessing is also made available.
 
 We further analyse wich symbols are easier to identify and which are easier to confound and over this try different appraches to improve a base model.  
