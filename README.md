@@ -8,7 +8,7 @@ Data is pulled directly in the notebook and preprocessing is also made available
 
 We further analyse which symbols are easier to identify and which are easier to confound and over this try different approaches to improve a base model.  
 
-We Use a CNN based model, to identify the signals in images, with over 98% accuracy on the test images, but given the limited nature of training samples, new test samples 
+We use a CNN based model, to identify the signals in images, with over 98% accuracy on the test images, but given the limited nature of training samples, new test samples 
 with different conditions are not so easily identified.  
 The final report is available including other studies on the behaviour of the model.
 
